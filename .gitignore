@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+*.egg-info/
+.pytest_cache/
+training_log*.txt
+prompt_best.txt
+prompt_review*.txt
+SPACCC_MEDDOCAN/
+.vscode/
