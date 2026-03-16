@@ -5,5 +5,5 @@ __pycache__/
 .pytest_cache/
 prompt_best.txt
 prompt_review*.txt
-SPACCC_MEDDOCAN/
+SPACCC/
 .vscode/

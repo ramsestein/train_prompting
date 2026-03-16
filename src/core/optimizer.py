@@ -52,6 +52,7 @@ def optimize_pipeline(
     strategy_hint=None,
     review_alt_hints=None,
     advisor_reports=None,
+    rejected_feedback=None,
 ):
     """
     El optimizador recibe toda la cadena de prompts y decide cómo mejorarla.
@@ -88,6 +89,14 @@ def optimize_pipeline(
         strategy_block = (
             f"\n💡 ENFOQUE SUGERIDO PARA ESTA ITERACIÓN:\n{strategy_hint}\n"
             f"Incorpora este enfoque en los prompts que generes cuando sea relevante.\n"
+        )
+
+    rejected_block = ""
+    if rejected_feedback:
+        rejected_block = (
+            "\n⛔ FEEDBACK DE INTENTOS RECHAZADOS EN ESTE MISMO BATCH:\n"
+            f"{rejected_feedback}\n"
+            "Debes evitar repetir esos cambios tal cual y proponer una alternativa distinta.\n"
         )
 
     # Construir bloque con la cadena actual
@@ -145,7 +154,7 @@ def optimize_pipeline(
     system_msg = f"""Eres un experto en ingeniería de prompts.
 
 Tu tarea es analizar los resultados de un pipeline de etiquetado/clasificación de texto y mejorar los prompts para maximizar la métrica '{metric_name}'.
-{context_block}{strategy_block}{advisor_block}
+{context_block}{strategy_block}{advisor_block}{rejected_block}
 {chain_block}
 RESULTADOS DE LAS MUESTRAS DE PRUEBA:
 {results_text}
@@ -157,6 +166,7 @@ INSTRUCCIONES:
 3. Mejora los prompts de forma coordinada.
 4. Si alguna review tiene un ↻ ALTERNATIVA SUGERIDA, rediseña ese prompt de review con ese enfoque.
 5. Ten en cuenta los informes de los advisors especializados (si los hay) como guía prioritaria.
+6. Si hay feedback de intentos rechazados, NO repitas esos cambios y corrige explícitamente las regresiones reportadas.
 
 FORMATO DE RESPUESTA OBLIGATORIO (escribe EXACTAMENTE estos separadores):
 {format_example}"""

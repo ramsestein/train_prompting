@@ -8,37 +8,29 @@ Diseñado originalmente para tareas de anonimización de texto clínico (corpus 
 
 ## Arquitectura del sistema
 
-El sistema combina ideas de **algoritmos evolutivos** (mutación, selección, presión selectiva) con **optimización guiada por LLM** (el optimizador "lee" los errores y genera mutaciones inteligentes en lugar de aleatorias). El resultado es un loop cerrado donde el prompt evoluciona hacia el óptimo de la métrica elegida.
+El sistema combina ideas de **algoritmos evolutivos** (mutación, selección, presión selectiva) con **optimización guiada por LLM** (el optimizador "lee" los errores y genera mutaciones inteligentes en lugar de aleatorias). El resultado es un loop cerrado donde el prompt evoluciona hacia el óptimo de la métrica elegida, evaluando baseline y candidato sobre el **mismo batch** antes de aceptar cambios.
 
 ```
                     ┌─────────────────────────────────────────────────────────────┐
                     │                     LOOP PRINCIPAL                          │
                     │                                                             │
-  prompt.txt ──►  [Worker LLM] ──► predicciones ──► [Evaluador] ──► métricas     │
-                    │                                                  │          │
-                    │                                                  ▼          │
-                    │              ┌─────────────────────────────────────┐         │
-                    │              │  Subagentes Advisors               │         │
-                    │              │  ┌──────────┐  ┌──────────────┐   │         │
-                    │              │  │ Recall    │  │ Precision    │   │         │
-                    │              │  │ Advisor   │  │ Advisor      │   │         │
-                    │              │  └─────┬─────┘  └──────┬───────┘   │         │
-                    │              │        └───────┬────────┘          │         │
-                    │              └────────────────┼───────────────────┘         │
-                    │                              ▼                             │
-                    │                    [Optimizador LLM]                        │
-                    │                         │                                  │
-                    │                         ▼                                  │
-                    │                   prompt mutado                             │
-                    │                         │                                  │
-                    │              ┌──────────┴──────────┐                       │
-                    │              │  Selección elitista  │                       │
-                    │              │  ¿mejora > best?     │                       │
-                    │              └──────────┬──────────┘                       │
-                    │                    sí / no                                 │
-                    │                   ▼      ▼                                 │
-                    │            guardar    descartar                             │
-                    │            como best  (mutar desde best)                   │
+            best_pipeline ─► [Worker LLM] ─► baseline_metrics                              │
+                    │                                                             │
+                    ▼                                                             │
+                [Advisors + Optimizador LLM] ─► candidate_pipeline                      │
+                    │                                                             │
+                    ▼                                                             │
+               [Worker LLM en el mismo batch] ─► candidate_metrics                     │
+                    │                                                             │
+                    ▼                                                             │
+                  ┌──────────────────────────────┐                                    │
+                  │ Aceptación por umbral (ε)    │                                    │
+                  │ Δ = score(cand) - score(base)│                                    │
+                  │ ¿Δ > ε?                       │                                    │
+                  └──────────────┬───────────────┘                                    │
+                       sí / no                                                   │
+                      ▼      ▼                                                   │
+                  promover cand  conservar best                                      │
                     └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -48,26 +40,32 @@ El sistema combina ideas de **algoritmos evolutivos** (mutación, selección, pr
 
 ### 1. El prompt como individuo evolutivo
 
-En lugar de optimizar pesos numéricos (como en ML clásico), aquí **el individuo que evoluciona es el texto del prompt**. Cada iteración genera una variante (mutación) del mejor prompt conocido, la evalúa contra el corpus, y la mantiene solo si supera al mejor previo. Esto es **selección elitista (1+1)**: se mantiene exactamente un individuo (el best) y en cada generación se genera un candidato mutado a partir de él.
+En lugar de optimizar pesos numéricos (como en ML clásico), aquí **el individuo que evoluciona es el texto del prompt**. En cada iteración se congela el mejor pipeline actual (`best`) como baseline, se evalúa en un batch, y luego se generan candidatos mutados desde ese baseline. Cada candidato se evalúa en el **mismo batch** y se acepta solo si mejora por encima de un umbral `ε`. Esto se comporta como un esquema **(1+λ) con aceptación por umbral**.
 
 ```
-best_pipeline = {main, review_1, review_2, ...}   ← cromosoma actual
-         │
-    [mutación via LLM]
-         │
-         ▼
-candidate_pipeline = {main', review_1', ...}       ← candidato mutado
-         │
-    [evaluación en N muestras]
-         │
-         ▼
-    score(candidate) > score(best)?
-         │
-    sí → best = candidate    (el candidato reemplaza al best)
-    no → descartar candidate (próxima mutación parte del best intacto)
+best_pipeline = {main, review_1, review_2, ...}   ← parent/baseline
+      │
+    [evaluar baseline en batch B]
+      │
+      ▼
+score_base = metric(best_pipeline, B)
+      │
+    [mutar desde best, hasta λ intentos]
+      │
+      ▼
+candidate_pipeline = {main', review_1', ...}
+      │
+    [evaluar candidato en el mismo batch B]
+      │
+      ▼
+Δ = score_cand - score_base
+      │
+  Δ > ε ?
+    sí → aceptar candidato como nuevo best
+    no → rechazar candidato y conservar best
 ```
 
-La diferencia clave con un algoritmo evolutivo clásico es que **las mutaciones no son aleatorias**: el optimizador LLM recibe los errores concretos (FP, FN, métricas por tipo de entidad) y genera cambios dirigidos. Esto equivale a tener un operador de mutación informado que sabe "dónde duele".
+La diferencia clave con un algoritmo evolutivo clásico es que **las mutaciones no son aleatorias**: el optimizador LLM recibe los errores concretos (FP, FN, métricas por tipo de entidad) y genera cambios dirigidos. Además, cuando hay rechazos en una misma iteración, el optimizador recibe feedback de esos intentos fallidos para evitar repetirlos.
 
 ### 2. El pipeline como cromosoma compuesto
 
@@ -183,7 +181,7 @@ Con todo esto, el optimizador genera una nueva versión completa del pipeline. L
 
 ### 6. Evaluación: fitness function
 
-La función de fitness es la **media aritmética** de la métrica elegida sobre las N muestras del batch:
+La función de fitness por pipeline es la **media aritmética** de la métrica elegida sobre las N muestras del batch:
 
 $$\text{fitness} = \frac{1}{N} \sum_{i=1}^{N} m_i$$
 
@@ -193,12 +191,26 @@ $$\text{Precision} = \frac{TP}{TP + FP}, \quad \text{Recall} = \frac{TP}{TP + FN
 
 Una predicción es TP solo si tanto el tipo de entidad como el texto extraído coinciden exactamente con el ground truth. Esto penaliza tanto los errores de clasificación (tipo incorrecto) como los de extracción (límites incorrectos).
 
+Para decidir aceptación dentro de la iteración, se compara baseline vs candidato en el mismo batch:
+
+$$
+\Delta = \text{fitness}(candidate, B) - \text{fitness}(baseline, B)
+$$
+
+Se acepta el candidato solo si:
+
+$$
+\Delta > \epsilon
+$$
+
+donde $\epsilon$ se controla con `--accept-epsilon`.
+
 ### 7. Convergencia y terminación
 
 El entrenamiento termina cuando se cumple alguna de estas condiciones:
 
 1. **Se agotan las iteraciones** (`--iterations`, default 100)
-2. **Early stopping**: `--patience` ciclos consecutivos sin superar el best score (default 30)
+2. **Early stopping**: `--patience` ciclos consecutivos sin aceptar ningún candidato (default 30)
 
 Al terminar, el sistema restaura y guarda el **mejor pipeline visto** durante todo el entrenamiento, no el último. Esto garantiza que incluso si las últimas iteraciones degeneraron, el resultado final es el óptimo observado.
 
@@ -210,7 +222,7 @@ Al terminar, el sistema restaura y guarda el **mejor pipeline visto** durante to
 | Gen | Cada prompt individual del pipeline |
 | Fitness function | Media de la métrica sobre N muestras |
 | Operador de mutación | LLM optimizador (mutación dirigida, no aleatoria) |
-| Selección | Elitista (1+1): solo sobrevive el mejor |
+| Selección | Aceptación en mismo batch (1+λ): baseline vs candidato con umbral ε |
 | Tasa de mutación variable | Estrategias inyectadas en estancamiento |
 | Crossover | No se usa (población de 1) |
 | Ampliación del genoma | Añadir reviews al pipeline |
@@ -322,11 +334,25 @@ python src/train.py --brat-dir SPACCC_MEDDOCAN/corpus/train/brat --prompt prompt
 | `--patience` | `30` | Early stopping: ciclos sin mejora antes de parar |
 | `--review-step` | `5` | Añade una nueva review cada N ciclos sin mejora |
 | `--max-reviews` | `3` | Número máximo de reviews encadenadas |
+| `--accept-epsilon` | `0.002` | Umbral mínimo para aceptar candidato en el mismo batch (`Δmétrica > ε`) |
+| `--candidate-attempts` | `1` | Intentos máximos de mutación+evaluación por iteración en el mismo batch |
 | `--context` / `-c` | — | Archivo de contexto adicional (CSV, TXT…) para el optimizador |
 | `--log` | `training_log.txt` | Archivo de log junto al prompt |
 | `--strategies` | `optimization_strategies.md` | Estrategias de optimización del prompt principal |
 | `--review-alternatives` | `review_alternatives.md` | Alternativas para rediseñar reviews estancadas |
 | `--seed` | — | Semilla para reproducibilidad del muestreo |
+
+### Aceptación de candidato en el mismo batch
+
+En cada iteración el flujo es:
+
+1. Evaluar el pipeline activo (baseline/parent) en el batch actual.
+2. Generar un candidato desde ese baseline.
+3. Evaluar el candidato en el **mismo batch**.
+4. Aceptar solo si `Δmétrica > --accept-epsilon`.
+5. Si no mejora, se rechaza y se conserva el baseline para la siguiente iteración.
+
+Si `--candidate-attempts > 1`, se pueden probar varios candidatos dentro de la misma iteración; los intentos rechazados se reportan al optimizador para evitar repetir cambios que empeoraron.
 
 ---
 

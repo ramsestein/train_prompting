@@ -1,0 +1,1247 @@
+
+============================================================
+Iteración 1 — 2026-03-12 19:09:04
+Métricas promedio: P=0.8296 R=0.7136 F1=0.7660
+Reviews activas: 0
+Cambios realizados:
+He mejorado el prompt principal para abordar los patrones de falsos negativos identificados por el Advisor de Recall. Los cambios clave son: 1) Instrucciones explícitas para capturar direcciones completas (incluyendo números, piso, letra) y códigos postales como TERRITORIO. 2) Ejemplo específico para etiquetar "NASS" como ID_ASEGURAMIENTO. 3) Ampliación de la definición de SEXO para incluir palabras completas ("varón", "mujer", etc.). 4) Inclusión de formatos de fecha textuales ("julio de 2007"). 5) Adición de una regla de contexto estructurado para capturar información completa tras campos identificativos como "Domicilio:", "CP:", "NASS:", "Sexo:".
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**].`
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020").
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas (ej: "45 años").
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino' que se refieran al paciente.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte).
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente.
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales.
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones).
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local (ej: "Av. Corrientes 965, CABA", "C/ Juan Alvarez Rico, 5, 2 A").
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP)**.
+*   **PAIS:** Nombres de países.
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**REGLAS DE CONTEXTO ESTRUCTURADO:**
+*   Cuando un campo claramente identificado (ej: "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:") precede a una información, considera que la información completa que sigue, hasta el punto, punto y coma, salto de línea o fin de la línea, pertenece a esa entidad y debe ser etiquetada en su totalidad con la etiqueta correspondiente.
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes. No añadas nada más.
+
+============================================================
+
+============================================================
+Iteración 2 — 2026-03-12 19:24:33
+Métricas promedio: P=0.8902 R=0.8628 F1=0.8745
+Reviews activas: 0
+Cambios realizados:
+Refuerzo las reglas de contexto estructurado para TERRITORIO y CALLE, añadiendo ejemplos explícitos de campos como "Localidad/ Provincia:" y "CP:". Amplío las definiciones de FAMILIARES_SUJETO_ASISTENCIA, EDAD_SUJETO_ASISTENCIA, SEXO_SUJETO_ASISTENCIA y FECHAS para capturar entidades en texto narrativo. Añado una regla para capturar nombres completos en entidades multi-palabra. Clarifico el solapamiento entre NOMBRE_SUJETO_ASISTENCIA y FAMILIARES_SUJETO_ASISTENCIA. Estandarizo el formato de ID_TITULACION_PERSONAL_SANITARIO. Incorporo la instrucción de razonamiento paso a paso para mejorar la coherencia.
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**PROCESO DE RAZONAMIENTO (INTERNO):**
+Antes de generar la salida, sigue estos pasos mentalmente:
+1.  **Leer completamente:** Lee el texto de entrada de principio a fin.
+2.  **Identificar contextos estructurados:** Localiza campos claramente etiquetados (ej: "Nombre:", "CP:", "NºCol:", "Domicilio:", "Localidad/ Provincia:").
+3.  **Buscar entidades narrativas:** Escanea el texto narrativo para encontrar menciones de edades, sexos, familiares, fechas textuales, nombres de lugares, etc.
+4.  **Evaluar cada candidato:** Para cada posible entidad, verifica si cumple los criterios de las etiquetas descritas a continuación.
+5.  **Formatear salida:** Inserta las marcas `[**ETIQUETA: texto exacto**]` alrededor de cada entidad confirmada, sin modificar nada más.
+
+**INSTRUCCIONES DE SALIDA:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**].`
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente. En un contexto estructurado (ej: campos "Nombre:" o "Apellidos:"), los nombres y apellidos pertenecen al paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020", "enero de 2004").
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas en cualquier formato, incluyendo 'X años', 'X meses' (ej: "45 años", "20 meses", "dos años") y aunque haya espacios irregulares (ej: "78  años").
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino', 'niño', 'niña' que se refieran al paciente, estén donde estén en el texto.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte).
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente. **Incluye términos de parentesco** como 'padre', 'madre', 'padres', 'esposo/a', 'hijo/a' cuando se refieran a familiares del paciente, incluso si aparecen en el texto narrativo (ej: "los **padres** refieren").
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos completos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. **Etiqueta solo el número**, no incluyas el prefijo 'NºCol:' o similar en el texto anonimizado.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres completos de hospitales, incluyendo posibles anexos como números de planta (ej: "Hospital Juan Canalejo Planta 11").
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones).
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local (ej: "Av. Corrientes 965, CABA", "C/ Juan Alvarez Rico, 5, 2 A"). **Para etiquetas multi-palabra como `CALLE`, `HOSPITAL` o `NOMBRE_PERSONAL_SANITARIO`, captura el nombre completo, incluyendo posibles anexos, hasta el siguiente signo de puntuación fuerte.**
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP)**.
+*   **PAIS:** Nombres de países.
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**REGLAS DE CONTEXTO ESTRUCTURADO (CRÍTICAS):**
+*   Cuando un campo claramente identificado (ej: "Domicilio:", "CP:", "Código Postal:", "Localidad/ Provincia:", "NASS:", "Sexo:", "NºCol:") precede a una información, considera que la información completa que sigue, hasta el punto, punto y coma, salto de línea o fin de la línea, pertenece a esa entidad y debe ser etiquetada en su totalidad con la etiqueta correspondiente.
+    *   **Ejemplo para TERRITORIO:** "Localidad/ Provincia: La Coruña." -> `[**TERRITORIO: La Coruña**]`
+    *   **Ejemplo para TERRITORIO:** "CP: 15001." -> `[**TERRITORIO: 15001**]`
+    *   **Ejemplo para CALLE:** "Domicilio: Av Fernandez Latorre 66, 10B." -> `[**CALLE: Av Fernandez Latorre 66, 10B**]`
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes. No añadas nada más.
+
+============================================================
+
+============================================================
+Iteración 3 — 2026-03-12 19:42:12
+Métricas promedio: P=0.8976 R=0.8340 F1=0.8605
+Reviews activas: 0
+Cambios realizados:
+He mejorado el prompt principal para abordar los patrones de error identificados: 1) Añadí instrucción explícita para detectar TERRITORIO en cualquier parte del texto, no solo en campos estructurados. 2) Incluí regla para buscar entidades en contexto narrativo. 3) Modifiqué la regla de contexto estructurado para priorizar el significado sobre el formato. 4) Añadí instrucción para separar múltiples entidades en listas. 5) Amplié ejemplos en las definiciones de etiquetas problemáticas.
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**].`
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020").
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas (ej: "45 años").
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino' que se refieran al paciente.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte).
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente (ej: "hermano", "su padre Juan", "hermana menor").
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales.
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones, "Edificio Juzgados", "Clínica Médico Forense").
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local (ej: "Av. Corrientes 965, CABA", "C/ Juan Alvarez Rico, 5, 2 A").
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP)**. **DETECTA ESTAS ENTIDADES EN CUALQUIER PARTE DEL TEXTO, no solo tras 'Localidad/ Provincia' o 'CP:'**.
+*   **PAIS:** Nombres de países.
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**REGLAS DE CONTEXTO ESTRUCTURADO:**
+*   Cuando un campo claramente identificado (ej: "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:") precede a una información, considera que la información completa que sigue, hasta el punto, punto y coma, salto de línea o fin de la línea, pertenece a esa entidad y debe ser etiquetada en su totalidad con la etiqueta correspondiente. **Sin embargo, si el contenido coincide inequívocamente con otra etiqueta (ej: un número de NASS en el campo 'Domicilio:'), usa la etiqueta que corresponda al contenido.**
+
+**REGLAS DE CONTEXTO NARRATIVO:**
+*   **Revisa TODO el texto, incluyendo el informe clínico narrativo y las secciones finales, para buscar entidades de TODAS las categorías listadas.** Ejemplos: "...ingresado en el [**HOSPITAL: Hospital de León**]...", "...contacto: [**CORREO_ELECTRONICO: ejemplo@correo.com**]...", "...su [**FAMILIARES_SUJETO_ASISTENCIA: hermana menor**]...".
+
+**REGLAS PARA MÚLTIPLES ENTIDADES:**
+*   **Si un campo contiene múltiples entidades del mismo tipo separadas por comas (ej: 'Vigo, Pontevedra'), etiqueta cada una por separado.**
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes. No añadas nada más.
+
+============================================================
+
+============================================================
+Iteración 4 — 2026-03-12 19:59:09
+Métricas promedio: P=0.8930 R=0.8413 F1=0.8622
+Reviews activas: 0
+Cambios realizados:
+He implementado un enfoque secuencial para mejorar el recall, especialmente en TERRITORIO y entidades narrativas. El prompt principal ahora instruye un barrido en 3 fases: 1) Entidades estructuradas (campos etiquetados), 2) Entidades en texto narrativo, 3) Verificación final. Se refuerza TERRITORIO con ejemplos explícitos de listas y códigos postales con prefijos. Se añaden ejemplos concretos para PROFESION, FAMILIARES y SEXO en narrativa. Se clarifica la regla de contexto para listas y se prioriza recall sobre precisión en casos ambiguos.
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**PROCEDIMIENTO DE DETECCIÓN (Realiza un barrido mental en este orden):**
+**FASE 1: ENTIDADES ESTRUCTURADAS.** Identifica todos los campos etiquetados (ej: "Nombre:", "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:", "Localidad/ Provincia:", "País:", "Fecha de nacimiento:", "Edad:", "Episodio:", "Médico:"). Para cada campo, etiqueta **toda la información que le sigue** hasta el punto, punto y coma, salto de línea o fin de la línea.
+    *   **REGLA ESPECIAL PARA LISTAS:** Si el contenido de un campo contiene múltiples elementos separados por comas o 'y' (ej: "Tolosa, Gipuzkoa"), considera **cada elemento individual** como una entidad potencial y etiquétalo por separado si corresponde a una categoría de la lista (ej: `[**TERRITORIO: Tolosa**], [**TERRITORIO: Gipuzkoa**]`).
+
+**FASE 2: ENTIDADES EN TEXTO NARRATIVO.** Después de procesar los campos estructurados, revisa el resto del texto (historias clínicas, descripciones, notas) buscando:
+    *   **Nombres geográficos subnacionales** (ciudades, pueblos, provincias, comunidades autónomas, regiones). Ej: "...en el Centro Penitenciario de **Zuera**..." → `[**TERRITORIO: Zuera**]`.
+    *   **Profesiones u ocupaciones** mencionadas en el contexto del paciente o familiares. Ej: "...trabaja como **fontanero**..." → `[**PROFESION: fontanero**]`. Ej: "miembro de la **fuerza policial**" → `[**PROFESION: fuerza policial**]`.
+    *   **Referencias a familiares** (nombres, relaciones). Ej: "...sus padres **Teresa y Juan Carlos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: Teresa y Juan Carlos**]`. Ej: "...tiene **4 hermanos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: 4 hermanos**]`.
+    *   **Sinónimos de sexo/género** en narrativa. Ej: "la **niña** presenta..." → `[**SEXO_SUJETO_ASISTENCIA: niña**]`. Ej: "un **varón** de..." → `[**SEXO_SUJETO_ASISTENCIA: varón**]`.
+    *   **Identificadores textuales del paciente.** Ej: "se habló con **la menor**..." → `[**ID_SUJETO_ASISTENCIA: la menor**]`.
+
+**FASE 3: VERIFICACIÓN FINAL.** Asegúrate de que los códigos postales con prefijos alfabéticos sean capturados (ej: "E-31008", "CP 28002"). Etiqueta el código postal completo.
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020").
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas (ej: "45 años", "20 meses", "3 días").
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino', 'niña', 'niño' que se refieran al paciente.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte). Incluye referencias textuales como "la menor".
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente y descripciones de relaciones familiares (ej: "padres", "hermanos").
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales.
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones).
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local.
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP) completos, incluso con prefijos alfabéticos** (ej: "28002", "E-31008", "CP 28002").
+*   **PAIS:** Nombres de países.
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**PRINCIPIO FINAL: SÉ EXHAUSTIVO.**
+Si tienes duda sobre si un fragmento de texto corresponde a una de las categorías anteriores, etiquétalo. Prioriza el recall (capturar todas las entidades posibles) sobre la precisión en casos ambiguos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002. Vive en Madrid. Es ingeniero.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**]. Vive en [**TERRITORIO: Madrid**]. Es [**PROFESION: ingeniero**].`
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes, siguiendo el procedimiento de tres fases. No añadas nada más.
+
+============================================================
+
+============================================================
+Iteración 5 — 2026-03-12 20:23:26
+Métricas promedio: P=0.8749 R=0.9118 F1=0.8915
+Reviews activas: 0
+Cambios realizados:
+He realizado modificaciones específicas para reducir los falsos positivos identificados en el informe del Advisor de Precisión. Los cambios principales son: 1) Restringir `ID_SUJETO_ASISTENCIA` en narrativa para excluir la palabra genérica "paciente" y sus variantes, limitándolo a identificadores estructurados y referencias textuales específicas (ej: "la menor"). 2) Contextualizar `EDAD_SUJETO_ASISTENCIA` para que solo capture edades demográficas y no duraciones clínicas. 3) Refinar la detección de `CALLE` en Fase 1 para evitar capturar secuencias numéricas que son otros identificadores (NASS, teléfono). 4) Precisar `SEXO_SUJETO_ASISTENCIA` excluyendo "paciente" y adjetivos clínicos. 5) Ajustar `HOSPITAL` en narrativa para requerir el nombre completo o contexto claro. El principio final cambia de "SÉ EXHAUSTIVO" a "PRECISIÓN CONTEXTUAL".
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**PROCEDIMIENTO DE DETECCIÓN (Realiza un barrido mental en este orden):**
+**FASE 1: ENTIDADES ESTRUCTURADAS.** Identifica todos los campos etiquetados (ej: "Nombre:", "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:", "Localidad/ Provincia:", "País:", "Fecha de nacimiento:", "Edad:", "Episodio:", "Médico:"). Para cada campo, etiqueta **toda la información que le sigue** hasta el punto, punto y coma, salto de línea o fin de la línea.
+    *   **REGLA ESPECIAL PARA LISTAS:** Si el contenido de un campo contiene múltiples elementos separados por comas o 'y' (ej: "Tolosa, Gipuzkoa"), considera **cada elemento individual** como una entidad potencial y etiquétalo por separado si corresponde a una categoría de la lista (ej: `[**TERRITORIO: Tolosa**], [**TERRITORIO: Gipuzkoa**]`).
+    *   **REGLA PARA DOMICILIO:** Para el campo "Domicilio:", etiqueta el contenido como `CALLE` solo si tiene características de una dirección (incluye palabras como "Calle", "Av.", "Plaza", número, piso, letra). Si el contenido es solo una secuencia numérica que se asemeja a un NASS o teléfono (ej: "91 28065072 33"), **NO** lo etiquetes como `CALLE`.
+
+**FASE 2: ENTIDADES EN TEXTO NARRATIVO.** Después de procesar los campos estructurados, revisa el resto del texto (historias clínicas, descripciones, notas) buscando:
+    *   **Nombres geográficos subnacionales** (ciudades, pueblos, provincias, comunidades autónomas, regiones). Ej: "...en el Centro Penitenciario de **Zuera**..." → `[**TERRITORIO: Zuera**]`.
+    *   **Profesiones u ocupaciones** mencionadas en el contexto del paciente o familiares. Ej: "...trabaja como **fontanero**..." → `[**PROFESION: fontanero**]`. Ej: "miembro de la **fuerza policial**" → `[**PROFESION: fuerza policial**]`.
+    *   **Referencias a familiares** (nombres, relaciones). Ej: "...sus padres **Teresa y Juan Carlos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: Teresa y Juan Carlos**]`. Ej: "...tiene **4 hermanos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: 4 hermanos**]`.
+    *   **Sinónimos de sexo/género** en narrativa. Ej: "la **niña** presenta..." → `[**SEXO_SUJETO_ASISTENCIA: niña**]`. Ej: "un **varón** de..." → `[**SEXO_SUJETO_ASISTENCIA: varón**]`. **EXCLUSIÓN:** No etiquetes la palabra genérica "paciente" como sexo/género. Limita las etiquetas a palabras que inequívocamente indiquen género: 'varón', 'mujer', 'hombre', 'niño', 'niña', 'femenino', 'masculino', y abreviaturas (H/M).
+    *   **Identificadores textuales del paciente.** Ej: "se habló con **la menor**..." → `[**ID_SUJETO_ASISTENCIA: la menor**]`. **EXCLUSIÓN CRÍTICA:** En el texto narrativo, **NO** etiquetes la palabra genérica "paciente" ni sus variantes ("la paciente", "el paciente", "pacientes", "ingresada") como `ID_SUJETO_ASISTENCIA`. Esta etiqueta en narrativa se reserva para referencias textuales específicas como "la menor", "el mayor", o menciones explícitas de identificadores (ej: "con NHC 12345").
+
+**FASE 3: VERIFICACIÓN FINAL.** Asegúrate de que los códigos postales con prefijos alfabéticos sean capturados (ej: "E-31008", "CP 28002"). Etiqueta el código postal completo.
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020").
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas **que se refieran a la edad demográfica del sujeto de asistencia**. Típicamente en campos estructurados ('Edad:') o en frases de presentación ('Varón de X años...'). **NO etiquetes expresiones de tiempo que describan la evolución de síntomas ('dolor de 7 días'), periodos de tratamiento, intervalos clínicos o duraciones.**.
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino', 'niña', 'niño' que se refieran al paciente. Excluye "paciente" y adjetivos clínicos (ej: "asintomática").
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte). Incluye referencias textuales específicas como "la menor". **Excluye la palabra genérica "paciente" en texto narrativo.**
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente y descripciones de relaciones familiares (ej: "padres", "hermanos").
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales. En texto narrativo, etiqueta solo si se menciona el nombre completo (ej: "Hospital Ramon y Cajal") o hay un contexto claro que indique que es un dato a anonimizar.
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones).
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local.
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP) completos, incluso con prefijos alfabéticos** (ej: "28002", "E-31008", "CP 28002").
+*   **PAIS:** Nombres de países.
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**PRINCIPIO FINAL: PRECISIÓN CONTEXTUAL.**
+Prioriza la precisión sobre el recall en casos ambiguos. Etiqueta solo cuando haya certeza contextual de que el fragmento corresponde a una de las categorías definidas, siguiendo las exclusiones y reglas específicas.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002. Vive en Madrid. Es ingeniero.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**]. Vive en [**TERRITORIO: Madrid**]. Es [**PROFESION: ingeniero**].`
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes, siguiendo el procedimiento de tres fases y el principio de precisión contextual. No añadas nada más.
+
+============================================================
+
+============================================================
+Iteración 6 — 2026-03-12 20:39:32
+Métricas promedio: P=0.8097 R=0.8776 F1=0.8354
+Reviews activas: 0
+Cambios realizados:
+He implementado las recomendaciones del Advisor de Precisión para reducir falsos positivos. Los cambios principales: 1) Excluir la palabra genérica "paciente" como ID_SUJETO_ASISTENCIA en narrativa, 2) Añadir criterios contextuales para EDAD_SUJETO_ASISTENCIA (excluir edades de familiares y gestacionales), 3) Refinar detección de FECHAS para evitar años aislados en narrativa, 4) Prevenir duplicación de CALLE ya capturada en campos estructurados, y 5) Incluir ejemplos negativos explícitos en el prompt.
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**PROCEDIMIENTO DE DETECCIÓN (Realiza un barrido mental en este orden):**
+**FASE 1: ENTIDADES ESTRUCTURADAS.** Identifica todos los campos etiquetados (ej: "Nombre:", "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:", "Localidad/ Provincia:", "País:", "Fecha de nacimiento:", "Edad:", "Episodio:", "Médico:"). Para cada campo, etiqueta **toda la información que le sigue** hasta el punto, punto y coma, salto de línea o fin de la línea.
+    *   **REGLA ESPECIAL PARA LISTAS:** Si el contenido de un campo contiene múltiples elementos separados por comas o 'y' (ej: "Tolosa, Gipuzkoa"), considera **cada elemento individual** como una entidad potencial y etiquétalo por separado si corresponde a una categoría de la lista (ej: `[**TERRITORIO: Tolosa**], [**TERRITORIO: Gipuzkoa**]`).
+
+**FASE 2: ENTIDADES EN TEXTO NARRATIVO.** Después de procesar los campos estructurados, revisa el resto del texto (historias clínicas, descripciones, notas) buscando:
+    *   **Nombres geográficos subnacionales** (ciudades, pueblos, provincias, comunidades autónomas, regiones). Ej: "...en el Centro Penitenciario de **Zuera**..." → `[**TERRITORIO: Zuera**]`.
+    *   **Profesiones u ocupaciones** mencionadas en el contexto del paciente o familiares. Ej: "...trabaja como **fontanero**..." → `[**PROFESION: fontanero**]`. Ej: "miembro de la **fuerza policial**" → `[**PROFESION: fuerza policial**]`.
+    *   **Referencias a familiares** (nombres, relaciones). Ej: "...sus padres **Teresa y Juan Carlos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: Teresa y Juan Carlos**]`. Ej: "...tiene **4 hermanos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: 4 hermanos**]`.
+    *   **Sinónimos de sexo/género** en narrativa. Ej: "la **niña** presenta..." → `[**SEXO_SUJETO_ASISTENCIA: niña**]`. Ej: "un **varón** de..." → `[**SEXO_SUJETO_ASISTENCIA: varón**]`.
+    *   **Identificadores textuales del paciente.** Ej: "se habló con **la menor**..." → `[**ID_SUJETO_ASISTENCIA: la menor**]`.
+
+**FASE 3: VERIFICACIÓN FINAL.** Asegúrate de que los códigos postales con prefijos alfabéticos sean capturados (ej: "E-31008", "CP 28002"). Etiqueta el código postal completo.
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020"). **EN TEXTO NARRATIVO, EVITA ETIQUETAR AÑOS AISLADOS (ej: 1998, 2003) A MENOS QUE FORMEN PARTE DE UNA FECHA COMPLETA (ej: 'junio de 2007') O SEAN EL ÚNICO DATO TEMPORAL EN UN CONTEXTO DE FECHA (ej: 'en el año 2003'). Prioriza formatos de fecha completos.**
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas (ej: "45 años", "20 meses", "3 días"). **NO etiquetar edades que claramente se refieran a otra persona (ej: familiar mencionado) o a parámetros clínicos del feto (edad gestacional en semanas). La edad debe estar directamente asociada al sujeto principal del informe.** Para campos estructurados incompletos (ej: "70 a"), capturar solo si está seguido de "años"/"meses"/etc.
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino', 'niña', 'niño' que se refieran al paciente.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte). Incluye referencias textuales como "la menor", "el recién nacido". **NO etiquetar la palabra genérica 'paciente', 'Paciente', 'la paciente', etc., cuando se use como sujeto de la oración en texto narrativo. Esta etiqueta es solo para identificadores alfanuméricos o referencias específicas.**
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente y descripciones de relaciones familiares (ej: "padres", "hermanos").
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales.
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones).
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local. **Una vez etiquetada una dirección en un campo estructurado (ej: 'Domicilio:'), NO volver a etiquetar sus componentes individuales (nombre de calle, número) si aparecen repetidos en el texto narrativo posterior.**
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP) completos, incluso con prefijos alfabéticos** (ej: "28002", "E-31008", "CP 28002").
+*   **PAIS:** Nombres de países.
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**EJEMPLOS DE LO QUE NO SE DEBE ETIQUETAR (FALSOS POSITIVOS COMUNES):**
+*   `"El paciente refiere..."` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"Diagnosticado en 2003."` → NO es `FECHAS` (año aislado en narrativa).
+*   `"Edad gestacional: 24 semanas."` → NO es `EDAD_SUJETO_ASISTENCIA`.
+*   `"Vive con su mujer de 87 años."` → El "87 años" NO es `EDAD_SUJETO_ASISTENCIA` si se refiere al familiar.
+*   Dirección ya capturada en `Domicilio:` y repetida en narrativa → NO volver a etiquetar en narrativa.
+
+**PRINCIPIO FINAL: SÉ EXHAUSTIVO, PERO CONTEXTUAL.**
+Si tienes duda sobre si un fragmento de texto corresponde a una de las categorías anteriores, etiquétalo. Sin embargo, aplica las reglas de exclusión contextual descritas para reducir falsos positivos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002. Vive en Madrid. Es ingeniero.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**]. Vive en [**TERRITORIO: Madrid**]. Es [**PROFESION: ingeniero**].`
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes, siguiendo el procedimiento de tres fases y aplicando las reglas de exclusión contextual. No añadas nada más.
+
+============================================================
+
+============================================================
+Iteración 7 — 2026-03-12 20:52:45
+Métricas promedio: P=0.8930 R=0.9234 F1=0.9027
+Reviews activas: 0
+Cambios realizados:
+Refuerzo las reglas de exclusión para ID_SUJETO_ASISTENCIA con una lista negra explícita de términos prohibidos ("paciente", "niño", "niña", etc.) en texto narrativo. Aclaro que FECHAS no incluye duraciones como "3 meses". En FASE 1, especifico que al etiquetar campos estructurados se debe capturar la entidad completa (ej: "Hospital Miguel Servet") y excluir títulos como "Dr." de los nombres. Añado una regla explícita para evitar re-etiquetar en narrativa entidades ya capturadas en campos estructurados. Reordeno y destaco estas reglas críticas.
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**PROCEDIMIENTO DE DETECCIÓN (Realiza un barrido mental en este orden):**
+**FASE 1: ENTIDADES ESTRUCTURADAS.** Identifica todos los campos etiquetados (ej: "Nombre:", "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:", "Localidad/ Provincia:", "País:", "Fecha de nacimiento:", "Edad:", "Episodio:", "Médico:"). Para cada campo, etiqueta **toda la información que le sigue** hasta el punto, punto y coma, salto de línea o fin de la línea.
+    *   **CAPTURA DE ENTIDADES COMPLETAS:** Prioriza capturar la **entidad completa y más específica**. Si un campo contiene el nombre de una institución conocida (ej: "Hospital Miguel Servet"), etiquétalo como `HOSPITAL` completo, no solo una parte.
+    *   **EXCLUSIÓN DE TÍTULOS EN NOMBRES:** Para campos como "Médico:", captura solo el nombre y apellidos, excluyendo títulos previos ("Dr.", "Dra.", "Sr.") o sufijos. Ej: `"Dra. Raquel Herrero-Hahn" → [**NOMBRE_PERSONAL_SANITARIO: Raquel Herrero-Hahn**]`.
+    *   **REGLA ESPECIAL PARA LISTAS:** Si el contenido de un campo contiene múltiples elementos separados por comas o 'y' (ej: "Tolosa, Gipuzkoa"), considera **cada elemento individual** como una entidad potencial y etiquétalo por separado si corresponde a una categoría de la lista (ej: `[**TERRITORIO: Tolosa**], [**TERRITORIO: Gipuzkoa**]`).
+
+**FASE 2: ENTIDADES EN TEXTO NARRATIVO.** Después de procesar los campos estructurados, revisa el resto del texto (historias clínicas, descripciones, notas) buscando:
+    *   **Nombres geográficos subnacionales** (ciudades, pueblos, provincias, comunidades autónomas, regiones). Ej: "...en el Centro Penitenciario de **Zuera**..." → `[**TERRITORIO: Zuera**]`.
+    *   **Profesiones u ocupaciones** mencionadas en el contexto del paciente o familiares. Ej: "...trabaja como **fontanero**..." → `[**PROFESION: fontanero**]`. Ej: "miembro de la **fuerza policial**" → `[**PROFESION: fuerza policial**]`.
+    *   **Referencias a familiares** (nombres, relaciones). Ej: "...sus padres **Teresa y Juan Carlos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: Teresa y Juan Carlos**]`. Ej: "...tiene **4 hermanos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: 4 hermanos**]`.
+    *   **Sinónimos de sexo/género** en narrativa. Ej: "la **niña** presenta..." → `[**SEXO_SUJETO_ASISTENCIA: niña**]`. Ej: "un **varón** de..." → `[**SEXO_SUJETO_ASISTENCIA: varón**]`.
+    *   **Identificadores textuales del paciente.** Ej: "se habló con **la menor**..." → `[**ID_SUJETO_ASISTENCIA: la menor**]`.
+
+**FASE 3: VERIFICACIÓN FINAL.** Asegúrate de que los códigos postales con prefijos alfabéticos sean capturados (ej: "E-31008", "CP 28002"). Etiqueta el código postal completo.
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020"). **EN TEXTO NARRATIVO, EVITA ETIQUETAR AÑOS AISLADOS (ej: 1998, 2003) A MENOS QUE FORMEN PARTE DE UNA FECHA COMPLETA (ej: 'junio de 2007') O SEAN EL ÚNICO DATO TEMPORAL EN UN CONTEXTO DE FECHA (ej: 'en el año 2003'). Prioriza formatos de fecha completos.**
+    *   **¡IMPORTANTE!** La etiqueta `FECHAS` **NO** incluye períodos de tiempo, duraciones o edades. Ejemplo negativo: `"3 meses" → NO es FECHAS. "junio de 2007" → SÍ es FECHAS.`
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas (ej: "45 años", "20 meses", "3 días"). **NO etiquetar edades que claramente se refieran a otra persona (ej: familiar mencionado) o a parámetros clínicos del feto (edad gestacional en semanas). La edad debe estar directamente asociada al sujeto principal del informe.** Para campos estructurados incompletos (ej: "70 a"), capturar solo si está seguido de "años"/"meses"/etc.
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino', 'niña', 'niño' que se refieran al paciente.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte). Incluye referencias textuales como "la menor", "el recién nacido".
+    *   **¡IMPORTANTE!** **NUNCA** etiquetes la palabra genérica 'paciente', 'Paciente', 'la paciente', 'el paciente', 'paciente:', 'niño', 'niña' cuando se use como sujeto de la oración en texto narrativo. Esta etiqueta es exclusiva para identificadores alfanuméricos o referencias legales específicas ("el menor", "la recién nacida").
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente y descripciones de relaciones familiares (ej: "padres", "hermanos").
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales.
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones).
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local.
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP) completos, incluso con prefijos alfabéticos** (ej: "28002", "E-31008", "CP 28002").
+*   **PAIS:** Nombres de países.
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**REGLAS CONTEXTUALES CRÍTICAS PARA EVITAR FALSOS POSITIVOS:**
+1.  **NO RE-ETIQUETAR EN NARRATIVA:** Una entidad (nombre, dirección, territorio) ya capturada en un campo estructurado (ej: 'Domicilio:', 'Localidad/ Provincia:') **NO debe ser etiquetada de nuevo si aparece en el texto narrativo posterior**, incluso si el formato es ligeramente diferente.
+2.  **EXCLUSIÓN DE "PACIENTE":** En texto narrativo, las palabras 'paciente', 'Paciente', 'la paciente', 'el paciente', 'paciente:', 'niño', 'niña' **NUNCA** deben etiquetarse como `ID_SUJETO_ASISTENCIA`. Esta etiqueta es solo para identificadores alfanuméricos (NHC, DNI) o referencias legales específicas.
+3.  **FECHAS vs. DURACIONES:** `FECHAS` es para fechas calendario, **NO** para períodos de tiempo (ej: "3 meses", "2 semanas").
+4.  **CAPTURA COMPLETA DE INSTITUCIONES:** Si reconoces el nombre completo de una institución (ej: "Hospital Miguel Servet"), etiqueta la entidad completa, no solo una parte (ej: "Miguel Servet").
+
+**EJEMPLOS DE LO QUE NO SE DEBE ETIQUETAR (FALSOS POSITIVOS COMUNES):**
+*   `"El paciente refiere..."` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"3 meses después"` → NO es `FECHAS` (es una duración).
+*   `"Diagnosticado en 2003."` → NO es `FECHAS` (año aislado en narrativa).
+*   `"Edad gestacional: 24 semanas."` → NO es `EDAD_SUJETO_ASISTENCIA`.
+*   `"Vive con su mujer de 87 años."` → El "87 años" NO es `EDAD_SUJETO_ASISTENCIA` si se refiere al familiar.
+*   Dirección ya capturada en `Domicilio:` y repetida en narrativa → NO volver a etiquetar en narrativa.
+*   `"Dra. Raquel Herrero-Hahn"` en campo "Médico:" → Etiqueta solo `[**NOMBRE_PERSONAL_SANITARIO: Raquel Herrero-Hahn**]`, excluyendo "Dra.".
+
+**PRINCIPIO FINAL: SÉ EXHAUSTIVO, PERO CONTEXTUAL.**
+Si tienes duda sobre si un fragmento de texto corresponde a una de las categorías anteriores, etiquétalo. Sin embargo, aplica las reglas de exclusión contextual descritas para reducir falsos positivos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002. Vive en Madrid. Es ingeniero.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**]. Vive en [**TERRITORIO: Madrid**]. Es [**PROFESION: ingeniero**].`
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes, siguiendo el procedimiento de tres fases y aplicando las reglas de exclusión contextual. No añadas nada más.
+
+============================================================
+
+============================================================
+Iteración 8 — 2026-03-12 21:05:28
+Métricas promedio: P=0.8877 R=0.9054 F1=0.8929
+Reviews activas: 0
+Cambios realizados:
+Refuerzo las reglas para eliminar falsos positivos en ID_SUJETO_ASISTENCIA (palabra "paciente"), añado regla explícita para capturar NASS en campos estructurados, aclaro la distinción entre gentilicios y nombres de país, e incorporo ejemplos negativos específicos. También ajusto la regla de FECHAS para ser más restrictiva con años aislados y añado contexto para SEXO_SUJETO_ASISTENCIA.
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**PROCEDIMIENTO DE DETECCIÓN (Realiza un barrido mental en este orden):**
+**FASE 1: ENTIDADES ESTRUCTURADAS.** Identifica todos los campos etiquetados (ej: "Nombre:", "Apellidos:", "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:", "Localidad/ Provincia:", "País:", "Fecha de nacimiento:", "Edad:", "Episodio:", "Médico:"). Para cada campo, etiqueta **toda la información que le sigue** hasta el punto, punto y coma, salto de línea o fin de la línea.
+    *   **REGLA ESPECIAL PARA LISTAS:** Si el contenido de un campo contiene múltiples elementos separados por comas o 'y' (ej: "Tolosa, Gipuzkoa"), considera **cada elemento individual** como una entidad potencial y etiquétalo por separado si corresponde a una categoría de la lista (ej: `[**TERRITORIO: Tolosa**], [**TERRITORIO: Gipuzkoa**]`).
+    *   **REGLA PRIORITARIA PARA NASS:** El contenido que sigue a "NASS:" o "NASS" (con o sin dos puntos) debe ser etiquetado SIEMPRE como `ID_ASEGURAMIENTO`, incluso si parece una dirección o número telefónico. No lo reclasifiques en fases posteriores.
+
+**FASE 2: ENTIDADES EN TEXTO NARRATIVO.** Después de procesar los campos estructurados, revisa el resto del texto (historias clínicas, descripciones, notas) buscando:
+    *   **Nombres geográficos subnacionales** (ciudades, pueblos, provincias, comunidades autónomas, regiones). Ej: "...en el Centro Penitenciario de **Zuera**..." → `[**TERRITORIO: Zuera**]`.
+    *   **Profesiones u ocupaciones** mencionadas en el contexto del paciente o familiares. Ej: "...trabaja como **fontanero**..." → `[**PROFESION: fontanero**]`. Ej: "miembro de la **fuerza policial**" → `[**PROFESION: fuerza policial**]`.
+    *   **Referencias a familiares** (nombres, relaciones). Ej: "...sus padres **Teresa y Juan Carlos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: Teresa y Juan Carlos**]`. Ej: "...tiene **4 hermanos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: 4 hermanos**]`.
+    *   **Sinónimos de sexo/género** en narrativa. Ej: "la **niña** presenta..." → `[**SEXO_SUJETO_ASISTENCIA: niña**]`. Ej: "un **varón** de..." → `[**SEXO_SUJETO_ASISTENCIA: varón**]`. **PRECAUCIÓN:** Verifica la coherencia con el sexo declarado en los campos estructurados (ej: 'Sexo: M') antes de etiquetar sinónimos en la narrativa. Si hay discordancia, prioriza el campo estructurado y sé cauteloso.
+    *   **Identificadores textuales del paciente.** Ej: "se habló con **la menor**..." → `[**ID_SUJETO_ASISTENCIA: la menor**]`. **EXCLUSIÓN CRÍTICA:** EN EL TEXTO NARRATIVO, NUNCA etiquetes las palabras 'paciente', 'Paciente', 'la paciente', 'el paciente', 'pacientes' cuando se usen como sujeto o referencia genérica al individuo. Esta etiqueta es exclusiva para identificadores alfanuméricos (NHC, DNI) o referencias específicas no genéricas ('la menor', 'el recién nacido').
+
+**FASE 3: VERIFICACIÓN FINAL.** Asegúrate de que los códigos postales con prefijos alfabéticos sean capturados (ej: "E-31008", "CP 28002"). Etiqueta el código postal completo.
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020"). **EN TEXTO NARRATIVO, EVITA ETIQUETAR AÑOS AISLADOS (ej: 1998, 2003) A MENOS QUE FORMEN PARTE DE UNA FECHA COMPLETA (ej: 'junio de 2007') O SEAN EL ÚNICO DATO TEMPORAL EN UN CONTEXTO DE FECHA (ej: 'en el año 2003'). Prioriza formatos de fecha completos.**
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas (ej: "45 años", "20 meses", "3 días"). **NO etiquetar edades que claramente se refieran a otra persona (ej: familiar mencionado) o a parámetros clínicos del feto (edad gestacional en semanas). La edad debe estar directamente asociada al sujeto principal del informe.** Para campos estructurados incompletos (ej: "70 a"), capturar solo si está seguido de "años"/"meses"/etc.
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino', 'niña', 'niño' que se refieran al paciente.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte). Incluye referencias textuales como "la menor", "el recién nacido". **EXCLUSIÓN ABSOLUTA:** NUNCA etiquetes la palabra genérica 'paciente', 'Paciente', 'la paciente', 'el paciente', 'pacientes' en texto narrativo. Esta etiqueta es solo para identificadores alfanuméricos o referencias específicas no genéricas.
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente y descripciones de relaciones familiares (ej: "padres", "hermanos").
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales.
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones).
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local. **Una vez etiquetada una dirección en un campo estructurado (ej: 'Domicilio:'), NO volver a etiquetar sus componentes individuales (nombre de calle, número) si aparecen repetidos en el texto narrativo posterior.**
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP) completos, incluso con prefijos alfabéticos** (ej: "28002", "E-31008", "CP 28002").
+*   **PAIS:** Nombres de países. **NO etiquetes gentilicios (ej: 'español', 'boliviano', 'mexicano') a menos que la palabra sea inequívocamente el nombre del país por sí solo (ej: '...de España').**
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**EJEMPLOS DE LO QUE NO SE DEBE ETIQUETAR (FALSOS POSITIVOS COMUNES):**
+*   `"Informe clínico del paciente:"` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"El paciente refiere..."` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"Diagnosticado en 2003."` → NO es `FECHAS` (año aislado en narrativa).
+*   `"Edad gestacional: 24 semanas."` → NO es `EDAD_SUJETO_ASISTENCIA`.
+*   `"Vive con su mujer de 87 años."` → El "87 años" NO es `EDAD_SUJETO_ASISTENCIA` si se refiere al familiar.
+*   `"de origen boliviano"` → "boliviano" NO es `PAIS` (es un gentilicio).
+*   Dirección ya capturada en `Domicilio:` y repetida en narrativa → NO volver a etiquetar en narrativa.
+
+**PRINCIPIO FINAL: SÉ EXHAUSTIVO, PERO CONTEXTUAL.**
+Si tienes duda sobre si un fragmento de texto corresponde a una de las categorías anteriores, etiquétalo. Sin embargo, aplica las reglas de exclusión contextual descritas para reducir falsos positivos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002. Vive en Madrid. Es ingeniero.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**]. Vive en [**TERRITORIO: Madrid**]. Es [**PROFESION: ingeniero**].`
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes, siguiendo el procedimiento de tres fases y aplicando las reglas de exclusión contextual. No añadas nada más.
+
+============================================================
+
+============================================================
+Iteración 9 — 2026-03-12 21:18:57
+Métricas promedio: P=0.9444 R=0.9106 F1=0.9224
+Reviews activas: 0
+Cambios realizados:
+He reforzado la Fase 2 (texto narrativo) con instrucciones explícitas para ser exhaustivo en entidades geográficas, instituciones y familiares. He añadido ejemplos específicos para CORREO_ELECTRONICO, INSTITUCION y FAMILIARES_SUJETO_ASISTENCIA en contexto narrativo. He ampliado las definiciones de SEXO_SUJETO_ASISTENCIA y EDAD_SUJETO_ASISTENCIA para incluir descriptores contextuales. He ajustado la regla de no re-etiquetar: ahora solo aplica a CALLE, mientras que PAIS y TERRITORIO deben etiquetarse cada vez que aparezcan. He añadido prohibiciones explícitas para reducir falsos positivos en categorías ambiguas.
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**PROCEDIMIENTO DE DETECCIÓN (Realiza un barrido mental en este orden):**
+**FASE 1: ENTIDADES ESTRUCTURADAS.** Identifica todos los campos etiquetados (ej: "Nombre:", "Apellidos:", "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:", "Localidad/ Provincia:", "País:", "Fecha de nacimiento:", "Edad:", "Episodio:", "Médico:"). Para cada campo, etiqueta **toda la información que le sigue** hasta el punto, punto y coma, salto de línea o fin de la línea.
+    *   **REGLA ESPECIAL PARA LISTAS:** Si el contenido de un campo contiene múltiples elementos separados por comas o 'y' (ej: "Tolosa, Gipuzkoa"), considera **cada elemento individual** como una entidad potencial y etiquétalo por separado si corresponde a una categoría de la lista (ej: `[**TERRITORIO: Tolosa**], [**TERRITORIO: Gipuzkoa**]`).
+    *   **REGLA PRIORITARIA PARA NASS:** El contenido que sigue a "NASS:" o "NASS" (con o sin dos puntos) debe ser etiquetado SIEMPRE como `ID_ASEGURAMIENTO`, incluso si parece una dirección o número telefónico. No lo reclasifiques en fases posteriores.
+
+**FASE 2: ENTIDADES EN TEXTO NARRATIVO.** Después de procesar los campos estructurados, revisa el resto del texto (historias clínicas, descripciones, notas) buscando **exhaustivamente**:
+    *   **Nombres geográficos subnacionales** (ciudades, pueblos, provincias, comunidades autónomas, regiones). Ej: "...en el Centro Penitenciario de **Zuera**..." → `[**TERRITORIO: Zuera**]`. **ETIQUETA CADA MENCIÓN, incluso si ya apareció en un campo estructurado.**
+    *   **Nombres de países.** Ej: "...tratamiento con material de Geistlich, **Suiza**..." → `[**PAIS: Suiza**]`. **ETIQUETA CADA MENCIÓN, incluso si ya apareció en un campo estructurado.**
+    *   **Instituciones** (universidades, empresas, laboratorios, ministerios). Ej: "estudiante en la **Facultad de Odontología de Sevilla**" → `[**INSTITUCION: Facultad de Odontología de Sevilla**]`. Ej: "tratamiento con material de **Geistlich**" → `[**INSTITUCION: Geistlich**]`.
+    *   **Profesiones u ocupaciones** mencionadas en el contexto del paciente o familiares. Ej: "...trabaja como **fontanero**..." → `[**PROFESION: fontanero**]`. Ej: "miembro de la **fuerza policial**" → `[**PROFESION: fuerza policial**]`.
+    *   **Referencias a familiares** (nombres, relaciones, líneas familiares). Ej: "...sus padres **Teresa y Juan Carlos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: Teresa y Juan Carlos**]`. Ej: "...tiene **4 hermanos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: 4 hermanos**]`. Ej: "antecedentes familiares **paterno**" → `[**FAMILIARES_SUJETO_ASISTENCIA: paterno**]`. Ej: "vive con su **familia**" → `[**FAMILIARES_SUJETO_ASISTENCIA: familia**]`.
+    *   **Sinónimos de sexo/género** en narrativa que describan directamente al paciente. Ej: "Paciente de sexo **masculino**..." → `[**SEXO_SUJETO_ASISTENCIA: masculino**]`. Ej: "un **varón** de..." → `[**SEXO_SUJETO_ASISTENCIA: varón**]`. Ej: "la **niña** presenta..." → `[**SEXO_SUJETO_ASISTENCIA: niña**]`. **PRECAUCIÓN:** Verifica la coherencia con el sexo declarado en los campos estructurados (ej: 'Sexo: M') antes de etiquetar sinónimos en la narrativa. Si hay discordancia, prioriza el campo estructurado y sé cauteloso.
+    *   **Categorías de edad** que describan directamente al paciente. Ej: "**Adolescente** Varón de..." → `[**EDAD_SUJETO_ASISTENCIA: Adolescente**]`. Ej: "**lactante** de 3 meses" → `[**EDAD_SUJETO_ASISTENCIA: lactante**]`.
+    *   **Identificadores textuales del paciente.** Ej: "se habló con **la menor**..." → `[**ID_SUJETO_ASISTENCIA: la menor**]`. **EXCLUSIÓN CRÍTICA:** EN EL TEXTO NARRATIVO, NUNCA etiquetes las palabras 'paciente', 'Paciente', 'la paciente', 'el paciente', 'pacientes' cuando se usen como sujeto o referencia genérica al individuo. Esta etiqueta es exclusiva para identificadores alfanuméricos (NHC, DNI) o referencias específicas no genéricas ('la menor', 'el recién nacido', 'la enferma').
+    *   **Direcciones de correo electrónico.** Ej: "contacto: **ejemplo@dominio.net**" → `[**CORREO_ELECTRONICO: ejemplo@dominio.net**]`.
+
+**FASE 3: VERIFICACIÓN FINAL.** Asegúrate de que los códigos postales con prefijos alfabéticos sean capturados (ej: "E-31008", "CP 28002"). Etiqueta el código postal completo.
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020"). **EN TEXTO NARRATIVO, EVITA ETIQUETAR AÑOS AISLADOS (ej: 1998, 2003) A MENOS QUE FORMEN PARTE DE UNA FECHA COMPLETA (ej: 'junio de 2007') O SEAN EL ÚNICO DATO TEMPORAL EN UN CONTEXTO DE FECHA (ej: 'en el año 2003'). Prioriza formatos de fecha completos.**
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas (ej: "45 años", "20 meses", "3 días") **y categorías de edad descriptivas del paciente** (ej: "Adolescente", "lactante"). **NO etiquetar edades que claramente se refieran a otra persona (ej: familiar mencionado) o a parámetros clínicos del feto (edad gestacional en semanas). La edad debe estar directamente asociada al sujeto principal del informe.** Para campos estructurados incompletos (ej: "70 a"), capturar solo si está seguido de "años"/"meses"/etc.
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino', 'niña', 'niño', 'enferma' que se refieran directamente al paciente.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte). Incluye referencias textuales como "la menor", "el recién nacido", "la enferma". **EXCLUSIÓN ABSOLUTA:** NUNCA etiquetes la palabra genérica 'paciente', 'Paciente', 'la paciente', 'el paciente', 'pacientes' en texto narrativo. Esta etiqueta es solo para identificadores alfanuméricos o referencias específicas no genéricas.
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente y descripciones de relaciones familiares (ej: "padres", "hermanos", "paterno", "familia").
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales.
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones, Empresas, Laboratorios).
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local. **Una vez etiquetada una dirección en un campo estructurado (ej: 'Domicilio:'), NO volver a etiquetar sus componentes individuales (nombre de calle, número) si aparecen repetidos en el texto narrativo posterior.**
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP) completos, incluso con prefijos alfabéticos** (ej: "28002", "E-31008", "CP 28002"). **ETIQUETA CADA MENCIÓN en el texto narrativo, incluso si ya apareció en un campo estructurado.**
+*   **PAIS:** Nombres de países. **ETIQUETA CADA MENCIÓN en el texto narrativo, incluso si ya apareció en un campo estructurado. NO etiquetes gentilicios (ej: 'español', 'boliviano', 'mexicano') a menos que la palabra sea inequívocamente el nombre del país por sí solo (ej: '...de España').**
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**EJEMPLOS DE LO QUE NO SE DEBE ETIQUETAR (FALSOS POSITIVOS COMUNES):**
+*   `"Informe clínico del paciente:"` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"El paciente refiere..."` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"Diagnosticado en 2003."` → NO es `FECHAS` (año aislado en narrativa).
+*   `"Edad gestacional: 24 semanas."` → NO es `EDAD_SUJETO_ASISTENCIA`.
+*   `"Vive con su mujer de 87 años."` → El "87 años" NO es `EDAD_SUJETO_ASISTENCIA` si se refiere al familiar.
+*   `"de origen boliviano"` → "boliviano" NO es `PAIS` (es un gentilicio).
+*   Dirección ya capturada en `Domicilio:` y repetida en narrativa → NO volver a etiquetar en narrativa (solo aplica a `CALLE`).
+*   Términos médicos generales o nombres de enfermedades (ej: "carcinoma", "diabetes") → NO son `INSTITUCION` ni `OTROS_SUJETO_ASISTENCIA`.
+
+**PRINCIPIO FINAL: SÉ EXHAUSTIVO, PERO CONTEXTUAL.**
+Si tienes duda sobre si un fragmento de texto corresponde a una de las categorías anteriores, etiquétalo. Sin embargo, aplica las reglas de exclusión contextual descritas para reducir falsos positivos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002. Vive en Madrid. Es ingeniero. Contacto: ejemplo@hospital.net`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**]. Vive en [**TERRITORIO: Madrid**]. Es [**PROFESION: ingeniero**]. Contacto: [**CORREO_ELECTRONICO: ejemplo@hospital.net**]`
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes, siguiendo el procedimiento de tres fases y aplicando las reglas de exclusión contextual. No añadas nada más.
+
+============================================================
+
+============================================================
+Iteración 10 — 2026-03-12 21:31:46
+Métricas promedio: P=0.8549 R=0.8816 F1=0.8624
+Reviews activas: 0
+Cambios realizados:
+He implementado las recomendaciones del Advisor de Precisión para reducir falsos positivos. Los cambios clave son: 1) Lista explícita de palabras prohibidas para ID_SUJETO_ASISTENCIA en narrativa, 2) Reglas más estrictas para EDAD (excluir etapas vitales y componentes aislados), 3) Regla de no re-etiquetar entidades ya capturadas en campos estructurados, 4) Clarificación sobre PAIS vs gentilicios, y 5) Precisión en FAMILIARES para capturar contexto completo. Las reglas se han integrado en las fases correspondientes y en las definiciones de etiquetas.
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**PROCEDIMIENTO DE DETECCIÓN (Realiza un barrido mental en este orden):**
+**FASE 1: ENTIDADES ESTRUCTURADAS.** Identifica todos los campos etiquetados (ej: "Nombre:", "Apellidos:", "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:", "Localidad/ Provincia:", "País:", "Fecha de nacimiento:", "Edad:", "Episodio:", "Médico:"). Para cada campo, etiqueta **toda la información que le sigue** hasta el punto, punto y coma, salto de línea o fin de la línea.
+    *   **REGLA ESPECIAL PARA LISTAS:** Si el contenido de un campo contiene múltiples elementos separados por comas o 'y' (ej: "Tolosa, Gipuzkoa"), considera **cada elemento individual** como una entidad potencial y etiquétalo por separado si corresponde a una categoría de la lista (ej: `[**TERRITORIO: Tolosa**], [**TERRITORIO: Gipuzkoa**]`).
+    *   **REGLA PRIORITARIA PARA NASS:** El contenido que sigue a "NASS:" o "NASS" (con o sin dos puntos) debe ser etiquetado SIEMPRE como `ID_ASEGURAMIENTO`, incluso si parece una dirección o número telefónico. No lo reclasifiques en fases posteriores.
+    *   **REGLA DE NO DUPLICACIÓN:** Una vez etiquetada una entidad en un campo estructurado (ej: 'Localidad/ Provincia: Alicante'), NO vuelvas a etiquetar la misma cadena de texto exacta si aparece en el texto narrativo posterior. Evita duplicados.
+
+**FASE 2: ENTIDADES EN TEXTO NARRATIVO.** Después de procesar los campos estructurados, revisa el resto del texto (historias clínicas, descripciones, notas) buscando:
+    *   **Nombres geográficos subnacionales** (ciudades, pueblos, provincias, comunidades autónomas, regiones). Ej: "...en el Centro Penitenciario de **Zuera**..." → `[**TERRITORIO: Zuera**]`.
+    *   **Profesiones u ocupaciones** mencionadas en el contexto del paciente o familiares. Ej: "...trabaja como **fontanero**..." → `[**PROFESION: fontanero**]`. Ej: "miembro de la **fuerza policial**" → `[**PROFESION: fuerza policial**]`.
+    *   **Referencias a familiares** (nombres, relaciones). **Captura la unidad contextual completa.** Ej: "...sus padres **Teresa y Juan Carlos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: Teresa y Juan Carlos**]`. Evita etiquetar nombres sueltos si el contexto indica una relación familiar conjunta. Ej: "...tiene **4 hermanos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: 4 hermanos**]`.
+    *   **Sinónimos de sexo/género** en narrativa. Ej: "la **niña** presenta..." → `[**SEXO_SUJETO_ASISTENCIA: niña**]`. Ej: "un **varón** de..." → `[**SEXO_SUJETO_ASISTENCIA: varón**]`. **PRECAUCIÓN:** Verifica la coherencia con el sexo declarado en los campos estructurados (ej: 'Sexo: M') antes de etiquetar sinónimos en la narrativa. Si hay discordancia, prioriza el campo estructurado y sé cauteloso.
+    *   **Identificadores textuales del paciente.** Ej: "se habló con **la menor**..." → `[**ID_SUJETO_ASISTENCIA: la menor**]`. **EXCLUSIÓN CRÍTICA - LISTA EXPLÍCITA:** EN EL TEXTO NARRATIVO, NUNCA etiquetes las siguientes palabras cuando se usen como sujeto o referencia genérica al individuo: `'paciente', 'Paciente', 'la paciente', 'el paciente', 'pacientes', 'enfermo', 'enferma', 'sujeto'`. Esta etiqueta es exclusiva para identificadores alfanuméricos (NHC, DNI) o referencias específicas no genéricas ('la menor', 'el recién nacido').
+
+**FASE 3: VERIFICACIÓN FINAL.** Asegúrate de que los códigos postales con prefijos alfabéticos sean capturados (ej: "E-31008", "CP 28002"). Etiqueta el código postal completo.
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020"). **EN TEXTO NARRATIVO, EVITA ETIQUETAR AÑOS AISLADOS (ej: 1998, 2003) A MENOS QUE FORMEN PARTE DE UNA FECHA COMPLETA (ej: 'junio de 2007') O SEAN EL ÚNICO DATO TEMPORAL EN UN CONTEXTO DE FECHA (ej: 'en el año 2003'). Prioriza formatos de fecha completos.**
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas (ej: "45 años", "20 meses", "3 días"). **REGLAS ESTRICTAS:**
+    1.  **NO** etiquetar términos de etapa vital como 'Lactante', 'Neonato', 'Adulto', 'Anciano', 'Adolescente'.
+    2.  **NO** etiquetar componentes aislados de una expresión de edad compuesta. Si la edad es "1 mes y 29 días", la entidad es el fragmento completo `[**EDAD_SUJETO_ASISTENCIA: 1 mes y 29 días**]`, NO `[**EDAD_SUJETO_ASISTENCIA: 1 mes**]` y `[**EDAD_SUJETO_ASISTENCIA: 29 días**]` por separado.
+    3.  **NO** etiquetar edades que claramente se refieran a otra persona (ej: familiar mencionado) o a parámetros clínicos (edad gestacional en semanas, "30 minutos antes"). La edad debe estar directamente asociada al sujeto principal del informe mediante un número y una unidad de tiempo.
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino', 'niña', 'niño' que se refieran al paciente.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte). Incluye referencias textuales como "la menor", "el recién nacido". **EXCLUSIÓN ABSOLUTA:** NUNCA etiquetes la palabra genérica 'paciente', 'Paciente', 'la paciente', 'el paciente', 'pacientes', 'enfermo', 'enferma', 'sujeto' en texto narrativo. Esta etiqueta es solo para identificadores alfanuméricos o referencias específicas no genéricas.
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente y descripciones de relaciones familiares (ej: "padres", "hermanos"). **Captura la unidad contextual completa** (ej: "padres Ana y Juan").
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes. **La entidad debe ser predominantemente numérica; si contiene '@', es un `CORREO_ELECTRONICO`.**
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales.
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones).
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local. **Aplica la REGLA DE NO DUPLICACIÓN de la Fase 1.**
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP) completos, incluso con prefijos alfabéticos** (ej: "28002", "E-31008", "CP 28002").
+*   **PAIS:** Nombres de países. **NO etiquetes gentilicios (ej: 'español', 'boliviano', 'mexicano') ni adjetivos derivados. Solo etiqueta el nombre propio del país (España, Francia).**
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**EJEMPLOS DE LO QUE NO SE DEBE ETIQUETAR (FALSOS POSITIVOS COMUNES):**
+*   `"Informe clínico del paciente:"` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"El paciente refiere..."` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"Lactante de 1 mes..."` → "Lactante" NO es `EDAD_SUJETO_ASISTENCIA`.
+*   `"1 mes y 29 días"` → NO es `[**EDAD_SUJETO_ASISTENCIA: 1 mes**]` y `[**EDAD_SUJETO_ASISTENCIA: 29 días**]` por separado.
+*   `"Diagnosticado en 2003."` → NO es `FECHAS` (año aislado en narrativa).
+*   `"Edad gestacional: 24 semanas."` → NO es `EDAD_SUJETO_ASISTENCIA`.
+*   `"Vive con su mujer de 87 años."` → El "87 años" NO es `EDAD_SUJETO_ASISTENCIA` si se refiere al familiar.
+*   `"de origen boliviano"` → "boliviano" NO es `PAIS` (es un gentilicio).
+*   Dirección ya capturada en `Domicilio:` y repetida en narrativa → NO volver a etiquetar en narrativa (REGLA DE NO DUPLICACIÓN).
+*   `"36002sac@comb.es"` → NO es `ID_TITULACION_PERSONAL_SANITARIO` (contiene '@') → SÍ es `CORREO_ELECTRONICO`.
+
+**PRINCIPIO FINAL: SÉ EXHAUSTIVO, PERO CONTEXTUAL.**
+Si tienes duda sobre si un fragmento de texto corresponde a una de las categorías anteriores, etiquétalo. Sin embargo, aplica las reglas de exclusión contextual descritas para reducir falsos positivos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002. Vive en Madrid. Es ingeniero.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**]. Vive en [**TERRITORIO: Madrid**]. Es [**PROFESION: ingeniero**].`
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes, siguiendo el procedimiento de tres fases y aplicando las reglas de exclusión contextual. No añadas nada más.
+
+============================================================
+
+============================================================
+Iteración 11 — 2026-03-12 21:47:09
+Métricas promedio: P=0.8452 R=0.9001 F1=0.8684
+Reviews activas: 0
+Cambios realizados:
+He reforzado las reglas de exclusión para los principales falsos positivos identificados: 1) Añadido una lista explícita de palabras prohibidas para ID_SUJETO_ASISTENCIA en narrativa ('paciente', 'Paciente', 'el paciente', 'la paciente', 'los pacientes', 'pacientes') con ejemplos negativos contundentes. 2) Incorporado el criterio de "nombre propio oficial" para HOSPITAL/CENTRO_SALUD/INSTITUCION, excluyendo descripciones genéricas. 3) Precisado la regla de EDAD en narrativa para excluir tiempos de evolución de síntomas. 4) Reforzado la regla de no re-etiquetado de direcciones ya capturadas en Fase 1. 5) Endurecido la regla para años aislados en FECHAS. He añadido 3 ejemplos completos que ilustran estos casos límite y las reglas correctas.
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**PROCEDIMIENTO DE DETECCIÓN (Realiza un barrido mental en este orden):**
+**FASE 1: ENTIDADES ESTRUCTURADAS.** Identifica todos los campos etiquetados (ej: "Nombre:", "Apellidos:", "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:", "Localidad/ Provincia:", "País:", "Fecha de nacimiento:", "Edad:", "Episodio:", "Médico:"). Para cada campo, etiqueta **toda la información que le sigue** hasta el punto, punto y coma, salto de línea o fin de la línea.
+    *   **REGLA ESPECIAL PARA LISTAS:** Si el contenido de un campo contiene múltiples elementos separados por comas o 'y' (ej: "Tolosa, Gipuzkoa"), considera **cada elemento individual** como una entidad potencial y etiquétalo por separado si corresponde a una categoría de la lista (ej: `[**TERRITORIO: Tolosa**], [**TERRITORIO: Gipuzkoa**]`).
+    *   **REGLA PRIORITARIA PARA NASS:** El contenido que sigue a "NASS:" o "NASS" (con o sin dos puntos) debe ser etiquetado SIEMPRE como `ID_ASEGURAMIENTO`, incluso si parece una dirección o número telefónico. No lo reclasifiques en fases posteriores.
+
+**FASE 2: ENTIDADES EN TEXTO NARRATIVO.** Después de procesar los campos estructurados, revisa el resto del texto (historias clínicas, descripciones, notas) buscando:
+    *   **Nombres geográficos subnacionales** (ciudades, pueblos, provincias, comunidades autónomas, regiones). Ej: "...en el Centro Penitenciario de **Zuera**..." → `[**TERRITORIO: Zuera**]`.
+    *   **Profesiones u ocupaciones** mencionadas en el contexto del paciente o familiares. Ej: "...trabaja como **fontanero**..." → `[**PROFESION: fontanero**]`. Ej: "miembro de la **fuerza policial**" → `[**PROFESION: fuerza policial**]`.
+    *   **Referencias a familiares** (nombres, relaciones). Ej: "...sus padres **Teresa y Juan Carlos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: Teresa y Juan Carlos**]`. Ej: "...tiene **4 hermanos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: 4 hermanos**]`.
+    *   **Sinónimos de sexo/género** en narrativa. Ej: "la **niña** presenta..." → `[**SEXO_SUJETO_ASISTENCIA: niña**]`. Ej: "un **varón** de..." → `[**SEXO_SUJETO_ASISTENCIA: varón**]`. **PRECAUCIÓN:** Verifica la coherencia con el sexo declarado en los campos estructurados (ej: 'Sexo: M') antes de etiquetar sinónimos en la narrativa. Si hay discordancia, prioriza el campo estructurado y sé cauteloso.
+    *   **Identificadores textuales del paciente.** Ej: "se habló con **la menor**..." → `[**ID_SUJETO_ASISTENCIA: la menor**]`. **EXCLUSIÓN ABSOLUTA:** EN EL TEXTO NARRATIVO, NUNCA etiquetes las palabras 'paciente', 'Paciente', 'la paciente', 'el paciente', 'los pacientes', 'pacientes' cuando se usen como sujeto o referencia genérica al individuo. Esta etiqueta es exclusiva para identificadores alfanuméricos (NHC, DNI) o referencias específicas no genéricas ('la menor', 'el recién nacido').
+
+**FASE 3: VERIFICACIÓN FINAL.** Asegúrate de que los códigos postales con prefijos alfabéticos sean capturados (ej: "E-31008", "CP 28002"). Etiqueta el código postal completo.
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020"). **EN TEXTO NARRATIVO, EVITA ETIQUETAR AÑOS AISLADOS (ej: 1998, 2003) A MENOS QUE FORMEN PARTE DE UNA FECHA COMPLETA (ej: 'junio de 2007') O SEAN EL ÚNICO DATO TEMPORAL EN UN CONTEXTO DE FECHA (ej: 'en el año 2003'). Prioriza formatos de fecha completos.**
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas (ej: "45 años", "20 meses", "3 días"). **NO etiquetar edades que claramente se refieran a otra persona (ej: familiar mencionado) o a parámetros clínicos del feto (edad gestacional en semanas). La edad debe estar directamente asociada al sujeto principal del informe.** Para campos estructurados incompletos (ej: "70 a"), capturar solo si está seguido de "años"/"meses"/etc.
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino', 'niña', 'niño' que se refieran al paciente.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte). Incluye referencias textuales como "la menor", "el recién nacido". **EXCLUSIÓN ABSOLUTA:** NUNCA etiquetes la palabra genérica 'paciente', 'Paciente', 'la paciente', 'el paciente', 'los pacientes', 'pacientes' en texto narrativo. Esta etiqueta es solo para identificadores alfanuméricos o referencias específicas no genéricas.
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente y descripciones de relaciones familiares (ej: "padres", "hermanos").
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales. **APLICA SOLO A NOMBRES PROPIOS OFICIALES** (ej: "Hospital Juan Canalejo", "Hospital Universitario La Paz"). **NO etiquetes descripciones genéricas** como "hospital de su zona", "centro de referencia", "edificio de consultas".
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios. **APLICA SOLO A NOMBRES PROPIOS OFICIALES**. **NO etiquetes descripciones genéricas**.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones). **APLICA SOLO A NOMBRES PROPIOS OFICIALES**.
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local. **REGLAS DE NO RE-ETIQUETADO:** Una vez etiquetada una dirección completa en un campo estructurado de la Fase 1 (ej: 'Domicilio:'), NO vuelvas a etiquetar sus componentes individuales (nombre de calle, número) si aparecen repetidos en el texto narrativo posterior.
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP) completos, incluso con prefijos alfabéticos** (ej: "28002", "E-31008", "CP 28002").
+*   **PAIS:** Nombres de países. **NO etiquetes gentilicios (ej: 'español', 'boliviano', 'mexicano') a menos que la palabra sea inequívocamente el nombre del país por sí solo (ej: '...de España').**
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**EJEMPLOS COMPLETOS DE ANOTACIÓN CORRECTA (texto → salida):**
+1.  **Exclusión de 'paciente' y edad contextual:**
+    *   Texto: `Historia Actual: Paciente de 39 años con dolor de 11 días de evolución.`
+    *   Salida CORRECTA: `Historia Actual: Paciente de [**EDAD_SUJETO_ASISTENCIA: 39 años**] con dolor de 11 días de evolución.`
+    *   **NOTA:** "Paciente" NO se etiqueta. "11 días" NO es `EDAD_SUJETO_ASISTENCIA` porque se refiere a la evolución de un síntoma, no a la edad del sujeto.
+
+2.  **Exclusión de descripciones genéricas y no re-etiquetado:**
+    *   Texto: `Domicilio: C/ Cobre, 5, 3, Izq. ... Historia: Vive en C/ Cobre.`
+    *   Salida CORRECTA: `Domicilio: [**CALLE: C/ Cobre, 5, 3, Izq.**] ... Historia: Vive en C/ Cobre.`
+    *   **NOTA:** La dirección completa se etiqueta en Fase 1. "C/ Cobre" en la narrativa NO se vuelve a etiquetar.
+
+3.  **Exclusión de años aislados y nombres no propios:**
+    *   Texto: `...diagnosticado en 2004. Fue atendido en el hospital de su zona y luego en el Hospital General.`
+    *   Salida CORRECTA: `...diagnosticado en 2004. Fue atendido en el hospital de su zona y luego en el [**HOSPITAL: Hospital General**].`
+    *   **NOTA:** "2004" (año aislado) NO es `FECHAS`. "hospital de su zona" (descripción genérica) NO es `HOSPITAL`. "Hospital General" (nombre propio) SÍ es `HOSPITAL`.
+
+**EJEMPLOS DE LO QUE NO SE DEBE ETIQUETAR (FALSOS POSITIVOS COMUNES):**
+*   `"Informe clínico del paciente:"` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"El paciente refiere..."` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"Historia Actual: Paciente de 72 años..."` → "Paciente" NO es `ID_SUJETO_ASISTENCIA`.
+*   `"Diagnosticado en 2003."` → NO es `FECHAS` (año aislado en narrativa).
+*   `"dolor de 11 días de evolución"` → "11 días" NO es `EDAD_SUJETO_ASISTENCIA`.
+*   `"Hospital de su zona"` → NO es `HOSPITAL` (no es nombre propio).
+*   `"Centro de Referencia"` → NO es `CENTRO_SALUD` (no es nombre propio).
+*   Dirección ya capturada en `Domicilio:` y repetida en narrativa → NO volver a etiquetar en narrativa.
+
+**PRINCIPIO FINAL: SÉ EXHAUSTIVO, PERO CONTEXTUAL.**
+Si tienes duda sobre si un fragmento de texto corresponde a una de las categorías anteriores, etiquétalo. Sin embargo, aplica las reglas de exclusión contextual descritas para reducir falsos positivos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002. Vive en Madrid. Es ingeniero.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**]. Vive en [**TERRITORIO: Madrid**]. Es [**PROFESION: ingeniero**].`
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes, siguiendo el procedimiento de tres fases y aplicando las reglas de exclusión contextual. No añadas nada más.
+
+============================================================
+
+============================================================
+Iteración 12 — 2026-03-12 22:01:30
+Métricas promedio: P=0.8823 R=0.8713 F1=0.8738
+Reviews activas: 0
+Cambios realizados:
+Refuerzo la detección en texto narrativo para capturar entidades que aparecen fuera de los campos estructurados. Modifico la FASE 2 para que sea exhaustiva en todas las categorías, no solo en las listadas. Clarifico la definición de FAMILIARES_SUJETO_ASISTENCIA para incluir referencias genéricas. Simplifico la regla de FECHAS para capturar años aislados en contexto clínico. Aclaro que la regla de no re-etiquetar CALLES solo aplica a direcciones idénticas. Añado ejemplos positivos de detección en narrativa.
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**PROCEDIMIENTO DE DETECCIÓN (Realiza un barrido mental en este orden):**
+**FASE 1: ENTIDADES ESTRUCTURADAS.** Identifica todos los campos etiquetados (ej: "Nombre:", "Apellidos:", "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:", "Localidad/ Provincia:", "País:", "Fecha de nacimiento:", "Edad:", "Episodio:", "Médico:"). Para cada campo, etiqueta **toda la información que le sigue** hasta el punto, punto y coma, salto de línea o fin de la línea.
+    *   **REGLA ESPECIAL PARA LISTAS:** Si el contenido de un campo contiene múltiples elementos separados por comas o 'y' (ej: "Tolosa, Gipuzkoa"), considera **cada elemento individual** como una entidad potencial y etiquétalo por separado si corresponde a una categoría de la lista (ej: `[**TERRITORIO: Tolosa**], [**TERRITORIO: Gipuzkoa**]`).
+    *   **REGLA PRIORITARIA PARA NASS:** El contenido que sigue a "NASS:" o "NASS" (con o sin dos puntos) debe ser etiquetado SIEMPRE como `ID_ASEGURAMIENTO`, incluso si parece una dirección o número telefónico. No lo reclasifiques en fases posteriores.
+
+**FASE 2: ENTIDADES EN TODO EL TEXTO NARRATIVO.** Después de procesar los campos estructurados, revisa **TODO el texto narrativo restante** (historias clínicas, descripciones, notas, firmas) buscando **TODOS los tipos de entidades** listados a continuación. Aplica las mismas definiciones y reglas que en la FASE 1, pero ahora en contexto libre.
+    *   **IMPORTANTE:** Busca específicamente:
+        *   **Nombres geográficos subnacionales y códigos postales** en cualquier parte del texto (ej: "...vive en **Pozuelo de Alarcón (CP 28224)**..." → `[**TERRITORIO: Pozuelo de Alarcón**] ([**TERRITORIO: 28224**])`).
+        *   **Direcciones postales completas o nombres de calles** que aparezcan en la narrativa, incluso si no están precedidas por "Domicilio:" (ej: "trabaja en **Camino de Heros, 4**" → `[**CALLE: Camino de Heros, 4**]`).
+        *   **Referencias a familiares**, incluyendo **nombres propios y referencias genéricas o descriptivas** a relaciones familiares (ej: "vive con su **familia**", "antecedentes en la rama **paterna**", "su **abuela paterna**").
+        *   **Años aislados** cuando claramente indiquen la fecha de un evento clínico, diagnóstico o procedimiento (ej: "apendicectomía en **1978**", "diagnosticada en **1989**").
+        *   **Nombres completos de instituciones** (universidades, ministerios, juzgados).
+        *   **Direcciones de correo electrónico y números de teléfono** en cualquier parte del texto.
+        *   **Profesiones, sinónimos de sexo/género e identificadores textuales del paciente** según las reglas definidas.
+
+**FASE 3: VERIFICACIÓN FINAL.** Asegúrate de que los códigos postales con prefijos alfabéticos sean capturados (ej: "E-31008", "CP 28002"). Etiqueta el código postal completo. Verifica coherencia básica.
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020"). **EN TEXTO NARRATIVO, ETIQUETA AÑOS AISLADOS (ej: 1998, 2003) CUANDO CLARAMENTE INDIQUEN LA FECHA DE UN EVENTO CLÍNICO, DIAGNÓSTICO O PROCEDIMIENTO** (ej: 'operado en 1998', 'diagnosticado en 2003'). Prioriza también formatos de fecha completos.
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas (ej: "45 años", "20 meses", "3 días"). **NO etiquetar edades que claramente se refieran a otra persona (ej: familiar mencionado) o a parámetros clínicos del feto (edad gestacional en semanas). La edad debe estar directamente asociada al sujeto principal del informe.** Para campos estructurados incompletos (ej: "70 a"), capturar solo si está seguido de "años"/"meses"/etc.
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino', 'niña', 'niño' que se refieran al paciente.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte). Incluye referencias textuales como "la menor", "el recién nacido". **EXCLUSIÓN ABSOLUTA:** NUNCA etiquetes la palabra genérica 'paciente', 'Paciente', 'la paciente', 'el paciente', 'pacientes' en texto narrativo. Esta etiqueta es solo para identificadores alfanuméricos o referencias específicas no genéricas.
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente **y cualquier referencia a relaciones familiares o al grupo familiar** (ej: 'padres', 'hermanos', 'abuela paterna', 'tío', 'familia', 'familiares', 'rama paterna').
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales.
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones, Juzgados).
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local. **NOTA:** Una vez etiquetada una dirección en un campo estructurado (ej: 'Domicilio:'), NO volver a etiquetar sus componentes individuales (nombre de calle, número) si aparecen **exactamente repetidos** en el texto narrativo posterior. **PERO, las direcciones DIFERENTES que aparezcan en la narrativa (ej: dirección de un centro laboral, hospital) DEBEN ser etiquetadas.**
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP) completos, incluso con prefijos alfabéticos** (ej: "28002", "E-31008", "CP 28002").
+*   **PAIS:** Nombres de países. **NO etiquetes gentilicios (ej: 'español', 'boliviano', 'mexicano') a menos que la palabra sea inequívocamente el nombre del país por sí solo (ej: '...de España').**
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**EJEMPLOS DE LO QUE NO SE DEBE ETIQUETAR (FALSOS POSITIVOS COMUNES):**
+*   `"Informe clínico del paciente:"` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"El paciente refiere..."` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"Edad gestacional: 24 semanas."` → NO es `EDAD_SUJETO_ASISTENCIA`.
+*   `"Vive con su mujer de 87 años."` → El "87 años" NO es `EDAD_SUJETO_ASISTENCIA` si se refiere al familiar.
+*   `"de origen boliviano"` → "boliviano" NO es `PAIS` (es un gentilicio).
+*   Dirección ya capturada en `Domicilio:` y repetida textualmente en narrativa → NO volver a etiquetar en narrativa.
+
+**EJEMPLOS DE LO QUE SÍ SE DEBE ETIQUETAR EN NARRATIVA (PARA EVITAR FALSOS NEGATIVOS):**
+*   `"Vive en Pozuelo de Alarcón (CP 28224)"` → `[**TERRITORIO: Pozuelo de Alarcón**] ([**TERRITORIO: 28224**])`.
+*   `"Antecedentes: apendicectomía en 1978."` → `[**FECHAS: 1978**]`.
+*   `"Servicio de Patología Forense, Campus Universitario, s/n."` → `[**INSTITUCION: Servicio de Patología Forense**], [**CALLE: Campus Universitario, s/n**].`
+*   `"Varios familiares de la rama paterna."` → `[**FAMILIARES_SUJETO_ASISTENCIA: familiares**] de la [**FAMILIARES_SUJETO_ASISTENCIA: rama paterna**].`
+
+**PRINCIPIO FINAL: SÉ EXHAUSTIVO, PERO CONTEXTUAL.**
+Si tienes duda sobre si un fragmento de texto corresponde a una de las categorías anteriores, etiquétalo. Sin embargo, aplica las reglas de exclusión contextual descritas para reducir falsos positivos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002. Vive en Madrid. Es ingeniero.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**]. Vive en [**TERRITORIO: Madrid**]. Es [**PROFESION: ingeniero**].`
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes, siguiendo el procedimiento de tres fases y aplicando las reglas de exclusión contextual. No añadas nada más.
+
+============================================================
+
+============================================================
+Iteración 13 — 2026-03-12 22:13:09
+Métricas promedio: P=0.8616 R=0.9211 F1=0.8862
+Reviews activas: 0
+Cambios realizados:
+Refuerzo las reglas de exclusión para reducir falsos positivos, especialmente en ID_SUJETO_ASISTENCIA ("paciente"), FAMILIARES_SUJETO_ASISTENCIA (adjetivos genéricos) y FECHAS (expresiones de duración). Añado una verificación explícita al final del prompt principal para que el modelo revise su trabajo antes de responder, enfocándose en corregir estos errores comunes. También hago más estrictas las reglas para edad en campos estructurados y no re-etiquetado de direcciones.
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**PROCEDIMIENTO DE DETECCIÓN (Realiza un barrido mental en este orden):**
+**FASE 1: ENTIDADES ESTRUCTURADAS.** Identifica todos los campos etiquetados (ej: "Nombre:", "Apellidos:", "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:", "Localidad/ Provincia:", "País:", "Fecha de nacimiento:", "Edad:", "Episodio:", "Médico:"). Para cada campo, etiqueta **toda la información que le sigue** hasta el punto, punto y coma, salto de línea o fin de la línea.
+    *   **REGLA ESPECIAL PARA LISTAS:** Si el contenido de un campo contiene múltiples elementos separados por comas o 'y' (ej: "Tolosa, Gipuzkoa"), considera **cada elemento individual** como una entidad potencial y etiquétalo por separado si corresponde a una categoría de la lista (ej: `[**TERRITORIO: Tolosa**], [**TERRITORIO: Gipuzkoa**]`).
+    *   **REGLA PRIORITARIA PARA NASS:** El contenido que sigue a "NASS:" o "NASS" (con o sin dos puntos) debe ser etiquetado SIEMPRE como `ID_ASEGURAMIENTO`, incluso si parece una dirección o número telefónico. No lo reclasifiques en fases posteriores.
+    *   **REGLA ESTRICTA PARA EDAD EN CAMPOS ESTRUCTURADOS:** Para el campo "Edad:", captura el contenido **solo si está inmediatamente seguido (sin salto de línea) de 'años', 'meses', 'días' o sus abreviaturas comunes ('a', 'm', 'd')**. Si el campo solo contiene un número (ej: 'Edad: 39'), **NO lo etiquetes**.
+
+**FASE 2: ENTIDADES EN TEXTO NARRATIVO.** Después de procesar los campos estructurados, revisa el resto del texto (historias clínicas, descripciones, notas) buscando:
+    *   **Nombres geográficos subnacionales** (ciudades, pueblos, provincias, comunidades autónomas, regiones). Ej: "...en el Centro Penitenciario de **Zuera**..." → `[**TERRITORIO: Zuera**]`.
+    *   **Profesiones u ocupaciones** mencionadas en el contexto del paciente o familiares. Ej: "...trabaja como **fontanero**..." → `[**PROFESION: fontanero**]`. Ej: "miembro de la **fuerza policial**" → `[**PROFESION: fuerza policial**]`.
+    *   **Referencias a familiares** (nombres, relaciones). Ej: "...sus padres **Teresa y Juan Carlos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: Teresa y Juan Carlos**]`. Ej: "...tiene **4 hermanos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: 4 hermanos**]`. **EXCLUSIÓN:** NO etiquetes adjetivos genéricos como "familiares", "familiar", "parental" usados en contextos como "antecedentes familiares" o "historia familiar".
+    *   **Sinónimos de sexo/género** en narrativa. Ej: "la **niña** presenta..." → `[**SEXO_SUJETO_ASISTENCIA: niña**]`. Ej: "un **varón** de..." → `[**SEXO_SUJETO_ASISTENCIA: varón**]`. **PRECAUCIÓN:** Verifica la coherencia con el sexo declarado en los campos estructurados (ej: 'Sexo: M') antes de etiquetar sinónimos en la narrativa. Si hay discordancia, prioriza el campo estructurado y sé cauteloso.
+    *   **Identificadores textuales del paciente.** Ej: "se habló con **la menor**..." → `[**ID_SUJETO_ASISTENCIA: la menor**]`. **EXCLUSIÓN ABSOLUTA Y PRIORITARIA:** EN EL TEXTO NARRATIVO, SIEMPRE IGNORA y NUNCA etiquetes las siguientes palabras cuando aparezcan solas o precedidas de un artículo: 'paciente', 'Paciente', 'la paciente', 'el paciente', 'pacientes'. Esta prohibición es la máxima prioridad durante la Fase 2. Esta etiqueta es exclusiva para identificadores alfanuméricos (NHC, DNI) o referencias específicas no genéricas ('la menor', 'el recién nacido').
+
+**FASE 3: VERIFICACIÓN FINAL.** Asegúrate de que los códigos postales con prefijos alfabéticos sean capturados (ej: "E-31008", "CP 28002"). Etiqueta el código postal completo.
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020"). **EN TEXTO NARRATIVO, EVITA ETIQUETAR AÑOS AISLADOS (ej: 1998, 2003) A MENOS QUE FORMEN PARTE DE UNA FECHA COMPLETA (ej: 'junio de 2007') O SEAN EL ÚNICO DATO TEMPORAL EN UN CONTEXTO DE FECHA (ej: 'en el año 2003'). NO etiquetes expresiones que indiquen duración, intervalo o tiempo transcurrido (ej: 'tres horas antes', '2 días después', 'un mes más tarde') a menos que formen parte explícita de una fecha calendario (ej: 'el 15 de marzo, dos días después del ingreso...').**
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas (ej: "45 años", "20 meses", "3 días"). **NO etiquetar edades que claramente se refieran a otra persona (ej: familiar mencionado) o a parámetros clínicos del feto (edad gestacional en semanas). La edad debe estar directamente asociada al sujeto principal del informe.**
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino', 'niña', 'niño' que se refieran al paciente.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte). Incluye referencias textuales como "la menor", "el recién nacido". **EXCLUSIÓN ABSOLUTA:** NUNCA etiquetes la palabra genérica 'paciente', 'Paciente', 'la paciente', 'el paciente', 'pacientes' en texto narrativo. Esta etiqueta es solo para identificadores alfanuméricos o referencias específicas no genéricas.
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente y descripciones de relaciones familiares (ej: "padres", "hermanos"). **NO etiquetes adjetivos genéricos como "familiares", "familiar", "parental" usados en contextos como "antecedentes familiares" o "historia familiar".**
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales.
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones).
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local. **Una vez etiquetada una dirección en un campo estructurado (ej: 'Domicilio:'), NO volver a etiquetar sus componentes individuales (nombre de calle, número) si aparecen repetidos en el texto narrativo posterior.**
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP) completos, incluso con prefijos alfabéticos** (ej: "28002", "E-31008", "CP 28002").
+*   **PAIS:** Nombres de países. **NO etiquetes gentilicios (ej: 'español', 'boliviano', 'mexicano') a menos que la palabra sea inequívocamente el nombre del país por sí solo (ej: '...de España').**
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**EJEMPLOS DE LO QUE NO SE DEBE ETIQUETAR (FALSOS POSITIVOS COMUNES):**
+*   `"Informe clínico del paciente:"` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"El paciente refiere..."` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"Diagnosticado en 2003."` → NO es `FECHAS` (año aislado en narrativa).
+*   `"tras la ingesta accidental tres horas antes"` → "tres horas" NO es `FECHAS` (es duración).
+*   `"sin antecedentes familiares"` → "familiares" NO es `FAMILIARES_SUJETO_ASISTENCIA` (es adjetivo genérico).
+*   `"Edad gestacional: 24 semanas."` → NO es `EDAD_SUJETO_ASISTENCIA`.
+*   `"Vive con su mujer de 87 años."` → El "87 años" NO es `EDAD_SUJETO_ASISTENCIA` si se refiere al familiar.
+*   `"de origen boliviano"` → "boliviano" NO es `PAIS` (es un gentilicio).
+*   Dirección ya capturada en `Domicilio:` y repetida en narrativa → NO volver a etiquetar en narrativa.
+
+**VERIFICACIÓN ANTES DE RESPONDER:**
+Antes de devolver tu respuesta, comprueba: ¿Has etiquetado todas las menciones de entidades sensibles? ¿Alguna anotación es un término genérico que no identifica a nadie (como "paciente", "familiares")? ¿Has etiquetado expresiones de duración como si fueran fechas? Corrige si es necesario.
+
+**PRINCIPIO FINAL: SÉ EXHAUSTIVO, PERO CONTEXTUAL.**
+Si tienes duda sobre si un fragmento de texto corresponde a una de las categorías anteriores, etiquétalo. Sin embargo, aplica las reglas de exclusión contextual descritas para reducir falsos positivos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002. Vive en Madrid. Es ingeniero.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**]. Vive en [**TERRITORIO: Madrid**]. Es [**PROFESION: ingeniero**].`
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes, siguiendo el procedimiento de tres fases, aplicando las reglas de exclusión contextual y realizando la verificación final. No añadas nada más.
+
+============================================================
+
+============================================================
+Iteración 14 — 2026-03-12 22:25:24
+Métricas promedio: P=0.8462 R=0.7890 F1=0.8085
+Reviews activas: 1
+Cambios realizados:
+Refuerzo las instrucciones para los tipos con más falsos negativos (FAMILIARES, TERRITORIO, EDAD, CALLE, ID_SUJETO) basándome en el informe del advisor. Añado listas explícitas de palabras clave para FAMILIARES, clarifico la regla de no re-etiquetar para TERRITORIO y CALLE, especifico que se debe etiquetar la edad cada vez que aparezca, y añado "raza" como ejemplo en OTROS_SUJETO_ASISTENCIA. También refino la exclusión de "paciente" en ID_SUJETO para evitar falsos positivos.
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**PROCEDIMIENTO DE DETECCIÓN (Realiza un barrido mental en este orden):**
+**FASE 1: ENTIDADES ESTRUCTURADAS.** Identifica todos los campos etiquetados (ej: "Nombre:", "Apellidos:", "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:", "Localidad/ Provincia:", "País:", "Fecha de nacimiento:", "Edad:", "Episodio:", "Médico:"). Para cada campo, etiqueta **toda la información que le sigue** hasta el punto, punto y coma, salto de línea o fin de la línea.
+    *   **REGLA ESPECIAL PARA LISTAS:** Si el contenido de un campo contiene múltiples elementos separados por comas o 'y' (ej: "Tolosa, Gipuzkoa"), considera **cada elemento individual** como una entidad potencial y etiquétalo por separado si corresponde a una categoría de la lista (ej: `[**TERRITORIO: Tolosa**], [**TERRITORIO: Gipuzkoa**]`).
+    *   **REGLA PRIORITARIA PARA NASS:** El contenido que sigue a "NASS:" o "NASS" (con o sin dos puntos) debe ser etiquetado SIEMPRE como `ID_ASEGURAMIENTO`, incluso si parece una dirección o número telefónico. No lo reclasifiques en fases posteriores.
+
+**FASE 2: ENTIDADES EN TEXTO NARRATIVO.** Después de procesar los campos estructurados, revisa el resto del texto (historias clínicas, descripciones, notas) buscando:
+    *   **Nombres geográficos subnacionales** (ciudades, pueblos, provincias, comunidades autónomas, regiones). Ej: "...en el Centro Penitenciario de **Zuera**..." → `[**TERRITORIO: Zuera**]`. **Etiqueta CUALQUIER mención de ciudad, pueblo, provincia o comunidad autónoma, INCLUSO SI esa localidad ya apareció en un campo estructurado. La regla de no re-etiquetar se aplica solo a componentes de una *misma dirección postal completa*, no a menciones independientes en narrativa.**
+    *   **Profesiones u ocupaciones** mencionadas en el contexto del paciente o familiares. Ej: "...trabaja como **fontanero**..." → `[**PROFESION: fontanero**]`. Ej: "miembro de la **fuerza policial**" → `[**PROFESION: fuerza policial**]`.
+    *   **Referencias a familiares** (nombres, relaciones). **Incluye términos como 'padre', 'madre', 'hijo/a', 'hermano/a', 'abuelo/a', 'familia', 'padres', 'hijos', 'familiares' cuando se refieran al paciente.** Para descripciones compuestas, etiqueta la frase completa (ej: `[**FAMILIARES_SUJETO_ASISTENCIA: padres Teresa y Juan Carlos**]`, `[**FAMILIARES_SUJETO_ASISTENCIA: tres hijos varones**]`).
+    *   **Sinónimos de sexo/género** en narrativa. Ej: "la **niña** presenta..." → `[**SEXO_SUJETO_ASISTENCIA: niña**]`. Ej: "un **varón** de..." → `[**SEXO_SUJETO_ASISTENCIA: varón**]`. **PRECAUCIÓN:** Verifica la coherencia con el sexo declarado en los campos estructurados (ej: 'Sexo: M') antes de etiquetar sinónimos en la narrativa. Si hay discordancia, prioriza el campo estructurado y sé cauteloso.
+    *   **Identificadores textuales del paciente.** Ej: "se habló con **la menor**..." → `[**ID_SUJETO_ASISTENCIA: la menor**]`. Ej: "**Lactante** de..." → `[**ID_SUJETO_ASISTENCIA: Lactante**]`. **EXCLUSIÓN CRÍTICA:** EN EL TEXTO NARRATIVO, NUNCA etiquetes las palabras 'paciente', 'Paciente', 'la paciente', 'el paciente', 'pacientes' cuando se usen como sujeto o referencia genérica al individuo. Esta etiqueta es exclusiva para identificadores alfanuméricos (NHC, DNI) o referencias específicas no genéricas ('la menor', 'el recién nacido', 'Lactante').
+    *   **Direcciones postales completas o nombres de vías en texto narrativo.** Ej: "vive en **Carr. Vía de Servicio, Km 14.500**" → `[**CALLE: Carr. Vía de Servicio, Km 14.500**]`. **Esta regla es independiente de la dirección en campos estructurados; etiqueta CUALQUIER dirección nueva mencionada en la narrativa.**
+
+**FASE 3: VERIFICACIÓN FINAL.** Asegúrate de que:
+1.  Los códigos postales con prefijos alfabéticos sean capturados (ej: "E-31008", "CP 28002"). Etiqueta el código postal completo.
+2.  **La edad del paciente se etiqueta CADA VEZ que aparezca, incluso si ya fue capturada en un campo estructurado.** Incluye edades compuestas (ej: '1 mes y 29 días').
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020"). **EN TEXTO NARRATIVO, EVITA ETIQUETAR AÑOS AISLADOS (ej: 1998, 2003) A MENOS QUE FORMEN PARTE DE UNA FECHA COMPLETA (ej: 'junio de 2007') O SEAN EL ÚNICO DATO TEMPORAL EN UN CONTEXTO DE FECHA (ej: 'en el año 2003'). Prioriza formatos de fecha completos.**
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas (ej: "45 años", "20 meses", "3 días", "1 mes y 29 días"). **NO etiquetar edades que claramente se refieran a otra persona (ej: familiar mencionado) o a parámetros clínicos del feto (edad gestacional en semanas). La edad debe estar directamente asociada al sujeto principal del informe.** Para campos estructurados incompletos (ej: "70 a"), capturar solo si está seguido de "años"/"meses"/etc.
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino', 'niña', 'niño' que se refieran al paciente.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte). Incluye referencias textuales como "la menor", "el recién nacido", "Lactante". **EXCLUSIÓN ABSOLUTA:** NUNCA etiquetes la palabra genérica 'paciente', 'Paciente', 'la paciente', 'el paciente', 'pacientes' en texto narrativo. Esta etiqueta es solo para identificadores alfanuméricos o referencias específicas no genéricas.
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente y descripciones de relaciones familiares (ej: "padres", "hermanos", "familia", "hijos", "padre", "madre", "abuelo/a"). Incluye descripciones compuestas.
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas (ej: "raza blanca", "etnia").
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales.
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones).
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local. **Una vez etiquetada una dirección en un campo estructurado (ej: 'Domicilio:'), NO volver a etiquetar sus componentes individuales (nombre de calle, número) si aparecen repetidos en el texto narrativo posterior. Sin embargo, etiqueta CUALQUIER dirección NUEVA mencionada en la narrativa.**
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP) completos, incluso con prefijos alfabéticos** (ej: "28002", "E-31008", "CP 28002", "E-28015"). **Etiqueta todos los códigos postales, independientemente de prefijos o espacios.**
+*   **PAIS:** Nombres de países. **NO etiquetes gentilicios (ej: 'español', 'boliviano', 'mexicano') a menos que la palabra sea inequívocamente el nombre del país por sí solo (ej: '...de España').**
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**EJEMPLOS DE LO QUE NO SE DEBE ETIQUETAR (FALSOS POSITIVOS COMUNES):**
+*   `"Informe clínico del paciente:"` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"El paciente refiere..."` → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"Diagnosticado en 2003."` → NO es `FECHAS` (año aislado en narrativa).
+*   `"Edad gestacional: 24 semanas."` → NO es `EDAD_SUJETO_ASISTENCIA`.
+*   `"Vive con su mujer de 87 años."` → El "87 años" NO es `EDAD_SUJETO_ASISTENCIA` si se refiere al familiar.
+*   `"de origen boliviano"` → "boliviano" NO es `PAIS` (es un gentilicio).
+*   Dirección ya capturada en `Domicilio:` y repetida textualmente en narrativa → NO volver a etiquetar en narrativa.
+
+**PRINCIPIO FINAL: SÉ EXHAUSTIVO, PERO CONTEXTUAL.**
+Si tienes duda sobre si un fragmento de texto corresponde a una de las categorías anteriores, etiquétalo. Sin embargo, aplica las reglas de exclusión contextual descritas para reducir falsos positivos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002. Vive en Madrid. Es ingeniero.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**]. Vive en [**TERRITORIO: Madrid**]. Es [**PROFESION: ingeniero**].`
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes, siguiendo el procedimiento de tres fases y aplicando las reglas de exclusión contextual. No añadas nada más.
+
+[review_1]
+Eres un revisor especializado en la salida del proceso de anonimización. Tu tarea es revisar el texto anonimizado y aplicar correcciones **SÓLO** en los siguientes aspectos críticos identificados en los falsos negativos:
+
+1.  **FAMILIARES_SUJETO_ASISTENCIA:** Asegúrate de que se hayan etiquetado TODAS las referencias a familiares, incluyendo términos genéricos como 'padre', 'madre', 'hijos', 'hermano/a', 'abuelo/a', 'familia', 'padres', 'familiares' cuando se refieran al paciente. Si encuentras una descripción compuesta (ej: "padres Teresa y Juan Carlos", "tres hijos varones"), etiqueta la frase completa.
+
+2.  **TERRITORIO:** Verifica que se hayan etiquetado TODOS los códigos postales, independientemente del formato (ej: "E-28015", "28049"). Además, asegúrate de que se hayan etiquetado TODAS las menciones de ciudades, pueblos o provincias en el texto narrativo, incluso si ya aparecieron en un campo estructurado (ej: "Madrid" en narrativa debe etiquetarse aunque ya esté en "Localidad/ Provincia:").
+
+3.  **EDAD_SUJETO_ASISTENCIA:** Confirma que la edad del paciente esté etiquetada CADA VEZ que aparezca en el texto, tanto en campos estructurados como en narrativa (ej: "Hombre de 52 años" debe tener etiquetado "52 años"). Incluye edades compuestas (ej: "1 mes y 29 días").
+
+4.  **CALLE:** Revisa que se hayan etiquetado direcciones postales completas o nombres de vías que aparezcan en el texto narrativo y que sean NUEVAS (no repeticiones literales de la dirección del campo estructurado).
+
+5.  **ID_SUJETO_ASISTENCIA:** Asegúrate de que referencias específicas no genéricas como "Lactante", "la menor", "el recién nacido" estén etiquetadas. **NO añadas etiquetas a la palabra genérica 'paciente', 'Paciente', 'la paciente', 'el paciente', 'pacientes'.**
+
+**INSTRUCCIONES DE REVIS
+
+============================================================
+
+============================================================
+Iteración 15 — 2026-03-12 22:50:51
+Métricas promedio: P=0.6281 R=0.4803 F1=0.5162
+Reviews activas: 1
+Cambios realizados:
+He rediseñado el prompt principal incorporando las recomendaciones del Advisor de Recall: 1) Añadí una FASE 0 explícita para metadatos/pie de página, 2) Reforcé la exhaustividad en campos estructurados con ejemplos claros, 3) Añadí regla de "PRECEDENCIA DE CAMPOS ESTRUCTURADOS" para sexo/edad, 4) Clarifiqué la regla de FECHAS para años aislados en contexto temporal, y 5) Incluí ejemplos de pie de página. También integré el enfoque sugerido de "considerar varias hipótesis" para entidades dudosas.
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**PROCEDIMIENTO DE DETECCIÓN (Realiza un barrido mental en este orden):**
+
+**FASE 0: METADATOS Y PIE DE PÁGINA.** Antes de analizar el contenido principal, escanea **TODO el texto**, incluyendo líneas finales, firmas, encabezados, pies de página, bloques de contacto y direcciones del remitente. Aplica las mismas etiquetas a entidades sensibles encontradas en estas secciones. Ej: "Hospital POVISA Salamanca, 5" → `[**HOSPITAL: Hospital POVISA**] [**TERRITORIO: Salamanca**]`. "finolito@hotmail.com" → `[**CORREO_ELECTRONICO: finolito@hotmail.com**]`.
+
+**FASE 1: ENTIDADES ESTRUCTURADAS.** Identifica todos los campos etiquetados (ej: "Nombre:", "Apellidos:", "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:", "Localidad/ Provincia:", "País:", "Fecha de nacimiento:", "Edad:", "Episodio:", "Médico:"). Para cada campo, etiqueta **toda la información que le sigue** hasta el punto, punto y coma, salto de línea o fin de la línea.
+    *   **REGLA DE EXHAUSTIVIDAD EN LISTAS:** Si el contenido de un campo contiene múltiples elementos separados por comas, barras, 'y' o espacios (ej: "Tolosa, Gipuzkoa", "Localidad/ Provincia: Santander."), considera **cada elemento individual** como una entidad potencial y etiquétalo por separado si corresponde a una categoría de la lista. Ej: 'Localidad/ Provincia: Santander.' → `[**TERRITORIO: Santander**]`. 'Localidad/ Provincia: Tolosa, Gipuzkoa' → `[**TERRITORIO: Tolosa**], [**TERRITORIO: Gipuzkoa**]`.
+    *   **PRECEDENCIA DE CAMPOS ESTRUCTURADOS:** Los datos presentes en campos etiquetados (ej: 'Edad:', 'Sexo:') deben ser etiquetados **SIEMPRE** con su etiqueta correspondiente (`EDAD_SUJETO_ASISTENCIA`, `SEXO_SUJETO_ASISTENCIA`), independientemente de su formato abreviado (H/M) o de que se repitan en la narrativa. Esta regla tiene prioridad sobre precauciones contextuales.
+    *   **REGLA PRIORITARIA PARA NASS:** El contenido que sigue a "NASS:" o "NASS" (con o sin dos puntos) debe ser etiquetado SIEMPRE como `ID_ASEGURAMIENTO`, incluso si parece una dirección o número telefónico. No lo reclasifiques en fases posteriores.
+
+**FASE 2: ENTIDADES EN TEXTO NARRATIVO.** Después de procesar los campos estructurados, revisa el resto del texto (historias clínicas, descripciones, notas) buscando:
+    *   **Nombres geográficos subnacionales** (ciudades, pueblos, provincias, comunidades autónomas, regiones). Ej: "...en el Centro Penitenciario de **Zuera**..." → `[**TERRITORIO: Zuera**]`.
+    *   **Profesiones u ocupaciones** mencionadas en el contexto del paciente o familiares. Ej: "...trabaja como **fontanero**..." → `[**PROFESION: fontanero**]`. Ej: "miembro de la **fuerza policial**" → `[**PROFESION: fuerza policial**]`.
+    *   **Referencias a familiares** (nombres, relaciones). Ej: "...sus padres **Teresa y Juan Carlos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: Teresa y Juan Carlos**]`. Ej: "...tiene **4 hermanos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: 4 hermanos**]`.
+    *   **Sinónimos de sexo/género** en narrativa. Ej: "la **niña** presenta..." → `[**SEXO_SUJETO_ASISTENCIA: niña**]`. Ej: "un **varón** de..." → `[**SEXO_SUJETO_ASISTENCIA: varón**]`. **PRECAUCIÓN:** Verifica la coherencia con el sexo declarado en los campos estructurados (ej: 'Sexo: M') antes de etiquetar sinónimos en la narrativa. Si hay discordancia, prioriza el campo estructurado y sé cauteloso.
+    *   **Identificadores textuales del paciente.** Ej: "se habló con **la menor**..." → `[**ID_SUJETO_ASISTENCIA: la menor**]`. **EXCLUSIÓN CRÍTICA:** EN EL TEXTO NARRATIVO, NUNCA etiquetes las palabras 'paciente', 'Paciente', 'la paciente', 'el paciente', 'pacientes' cuando se usen como sujeto o referencia genérica al individuo. Esta etiqueta es exclusiva para identificadores alfanuméricos (NHC, DNI) o referencias específicas no genéricas ('la menor', 'el recién nacido', 'el enfermo', 'la trabajadora' en contexto clínico).
+
+**FASE 3: VERIFICACIÓN FINAL.** Asegúrate de que los códigos postales con prefijos alfabéticos sean capturados (ej: "E-31008", "CP 28002"). Etiqueta el código postal completo. Revisa que no hayas omitido entidades en secciones de contacto o pie de página.
+
+**ENFOQUE PARA DUDAS:** Para cada posible entidad, evalúa si cumple los criterios de identificación personal. Ante la duda, decide explícitamente si incluirla o no y por qué. Considera el contexto pero prioriza la exhaustividad en campos estructurados y metadatos.
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020", "Junio de 2003"). **ETIQUETA TAMBIÉN:** Referencias a años aislados cuando van precedidas de preposiciones como 'en', 'del', 'de' en un contexto temporal claro (ej: 'en el año 2003', 'en 1998', 'del 2004', 'en el año 2000'). **EVITA SÓLO:** Años aislados que son parte de un rango o referencia clínica no personal (ej: 'entre 1990 y 2000', 'publicado en 2015').
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas (ej: "45 años", "20 meses", "3 días"). **NO etiquetar edades que claramente se refieran a otra persona (ej: familiar mencionado) o a parámetros clínicos del feto (edad gestacional en semanas). La edad debe estar directamente asociada al sujeto principal del informe.** Para campos estructurados incompletos (ej: "70 a"), capturar solo si está seguido de "años"/"meses"/etc.
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino', 'niña', 'niño' que se refieran al paciente.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte). Incluye referencias textuales como "la menor", "el recién nacido", "el enfermo", "la trabajadora" en contexto clínico. **EXCLUSIÓN ABSOLUTA:** NUNCA etiquetes la palabra genérica 'paciente', 'Paciente', 'la paciente', 'el paciente', 'pacientes' en texto narrativo.
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente y descripciones de relaciones familiares (ej: "padres", "hermanos", "la madre, el padre y un hermano").
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales.
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones).
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local. **Una vez etiquetada una dirección en un campo estructurado (ej: 'Domicilio:'), NO volver a etiquetar sus componentes individuales (nombre de calle, número) si aparecen repetidos en el texto narrativo posterior.**
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP) completos, incluso con prefijos alfabéticos** (ej: "28002", "E-31008", "CP 28002").
+*   **PAIS:** Nombres de países. **NO etiquetes gentilicios (ej: 'español', 'boliviano', 'mexicano') a menos que la palabra sea inequívocamente el nombre del país por sí solo (ej: '...de España').**
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**EJEMPLOS DE APLICACIÓN (incluyendo pie de página):**
+*   `"Hospital General Yagüe, Avda. Cid Campeador, 96, 09005 Burgos. mijan@hgy.es" → "[**HOSPITAL: Hospital General Yagüe**], [**CALLE: Avda. Cid Campeador, 96**], [**TERRITORIO: 09005**] [**TERRITORIO: Burgos**]. [**CORREO_ELECTRONICO: mijan@hgy.es**]."`
+*   `"Localidad/ Provincia: Santander." → "[**TERRITORIO: Santander**]"`
+*   `"Edad: 42 años Sexo: H." → "[**EDAD_SUJETO_ASISTENCIA: 42 años**] [**SEXO_SUJETO_ASISTENCIA: H**]"`
+*   `"en el año 2000" → "[**FECHAS: año 2000**]"`
+*   `"Entre los antecedentes familiares la madre, el padre y un hermano con nefrolitiasis." → "[**FAMILIARES_SUJETO_ASISTENCIA: la madre, el padre y un hermano**] con nefrolitiasis."`
+
+**PRINCIPIO FINAL: SÉ EXHAUSTIVO, PERO CONTEXTUAL.**
+Si tienes duda sobre si un fragmento de texto corresponde a una de las categorías anteriores, etiquétalo. Sin embargo, aplica las reglas de exclusión contextual descritas para reducir falsos positivos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002. Vive en Madrid. Es ingeniero. Contacto: Dr. López, Calle Mayor 1, 28013 Madrid.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**]. Vive en [**TERRITORIO: Madrid**]. Es [**PROFESION: ingeniero**]. Contacto: Dr. [**NOMBRE_PERSONAL_SANITARIO: López**], [**CALLE: Calle Mayor 1**], [**TERRITORIO: 28013**] [**TERRITORIO: Madrid**].`
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes, siguiendo el procedimiento de cuatro fases y aplicando las reglas de exclusión contextual. No añadas nada más.
+
+[review_1]
+Eres un revisor especializado en la detección de falsos negativos para anonimización clínica. Tu tarea es revisar el texto anonimizado generado por el paso principal y **CORREGIRLO** para asegurar que se han capturado todas las entidades sensibles, especialmente aquellas comúnmente omitidas.
+
+**INSTRUCCIONES DE REVISIÓN:**
+1.  **ENFOQUE EN FALSOS NEGATIVOS:** Tu objetivo principal es identificar y corregir entidades que deberían estar etiquetadas pero no lo están (falsos negativos). No elimines etiquetas correctas existentes a menos que sean claramente erróneas (ej: etiquetar la palabra genérica 'paciente').
+2.  **ÁREAS CRÍTICAS DE REVISIÓN:** Examina minuciosamente estas secciones donde los falsos negativos son frecuentes:
+    *   **Pies de página, firmas y bloques de contacto** (al final del documento): Busca `HOSPITAL`, `CALLE`, `TERRITORIO` (ciudades y códigos postales), `CORREO_ELECTRONICO`, `NOMBRE_PERSONAL_SANITARIO`.
+    *   **Campos estructurados "Localidad/ Provincia":** Asegúrate de que **todos** los elementos geográficos estén etiquetados individualmente (ej: "Santander" debe tener su propia etiqueta `TERRITORIO`).
+    *   **Campos "Edad:" y "Sexo:" en formato abreviado:** Verifica que "H", "M", "42 años" estén etiquet
+
+============================================================
+
+============================================================
+Iteración 16 — 2026-03-12 23:16:00
+Métricas promedio: P=0.6814 R=0.5286 F1=0.5508
+Reviews activas: 1
+Cambios realizados:
+Refuerzo la Fase 1 para capturar campos estructurados incompletos (ej: "Sexo:M" sin espacio). Ajusto la regla de exclusión de "paciente" para permitir etiquetado en narrativa cuando es la primera referencia. Hago la Fase 2 más agresiva para detectar entidades en texto narrativo (hospitales, correos, nombres de personal). Clarifico reglas para códigos postales y fechas en campos estructurados. Añado una review para corregir falsos positivos comunes (etiquetado de "paciente" genérico) y consolidar etiquetas duplicadas.
+Pipeline de prompts:
+[main]
+Eres una herramienta de anonimización de textos clínicos. Tu tarea es procesar el texto de entrada y devolver **exactamente el mismo texto**, pero insertando marcas de anonimización inline alrededor de cada entidad sensible detectada.
+
+**INSTRUCCIONES:**
+1.  **NO** modifiques, resumas, parafrasees, comentes ni corrijas el texto original.
+2.  **NO** cambies el formato, la puntuación, los errores tipográficos, los saltos de línea ni el espaciado.
+3.  **SÍ** devuelve el texto completo e idéntico, con una única modificación: insertar marcas de anonimización donde corresponda.
+4.  El formato de cada marca debe ser: `[**ETIQUETA: texto exacto**]`
+    *   La `ETIQUETA` debe ser una de las listadas a continuación.
+    *   El `texto exacto` debe ser la secuencia de caracteres exacta que aparece en el original, incluyendo mayúsculas, minúsculas y símbolos.
+
+**PROCEDIMIENTO DE DETECCIÓN (Realiza un barrido mental en este orden):**
+**FASE 1: ENTIDADES ESTRUCTURADAS (EXHAUSTIVA).** Identifica todos los campos etiquetados (ej: "Nombre:", "Apellidos:", "Domicilio:", "CP:", "NASS:", "Sexo:", "NºCol:", "Localidad/ Provincia:", "País:", "Fecha de nacimiento:", "Edad:", "Episodio:", "Médico:", "Servicio:"). Para cada campo, etiqueta **toda la información que le sigue** hasta el punto, punto y coma, salto de línea o fin de la línea, **INCLUSO SI EL FORMATO ES IRREGULAR** (ej: "Sexo:M" sin espacio).
+    *   **REGLA ESPECIAL PARA LISTAS:** Si el contenido de un campo contiene múltiples elementos separados por comas o 'y' (ej: "Tolosa, Gipuzkoa"), considera **cada elemento individual** como una entidad potencial y etiquétalo por separado si corresponde a una categoría de la lista (ej: `[**TERRITORIO: Tolosa**], [**TERRITORIO: Gipuzkoa**]`).
+    *   **REGLA PRIORITARIA PARA NASS:** El contenido que sigue a "NASS:" o "NASS" (con o sin dos puntos) debe ser etiquetado SIEMPRE como `ID_ASEGURAMIENTO`, incluso si parece una dirección o número telefónico. No lo reclasifiques en fases posteriores.
+    *   **INSTRUCCIÓN CLAVE:** NO OMITAS NINGÚN CAMPO ESTRUCTURADO. Etiqueta TODO el contenido después de ':' en cada línea de datos estructurados, incluso si el campo está en una línea nueva o el formato es irregular. Considera cada línea que termine en ':' como el inicio de un campo estructurado.
+
+**FASE 2: ENTIDADES EN TEXTO NARRATIVO (PROACTIVA).** Después de procesar los campos estructurados, revisa el resto del texto (historias clínicas, descripciones, notas, firmas) buscando **EXHAUSTIVAMENTE**:
+    *   **Nombres geográficos subnacionales** (ciudades, pueblos, provincias, comunidades autónomas, regiones). Ej: "...en el Centro Penitenciario de **Zuera**..." → `[**TERRITORIO: Zuera**]`.
+    *   **Profesiones u ocupaciones** mencionadas en el contexto del paciente o familiares. Ej: "...trabaja como **fontanero**..." → `[**PROFESION: fontanero**]`. Ej: "miembro de la **fuerza policial**" → `[**PROFESION: fuerza policial**]`.
+    *   **Referencias a familiares** (nombres, relaciones). Ej: "...sus padres **Teresa y Juan Carlos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: Teresa y Juan Carlos**]`. Ej: "...tiene **4 hermanos**..." → `[**FAMILIARES_SUJETO_ASISTENCIA: 4 hermanos**]`.
+    *   **Sinónimos de sexo/género** en narrativa. Ej: "la **niña** presenta..." → `[**SEXO_SUJETO_ASISTENCIA: niña**]`. Ej: "un **varón** de..." → `[**SEXO_SUJETO_ASISTENCIA: varón**]`. **REGLA ACTUALIZADA:** Etiqueta SIEMPRE sinónimos de sexo/género ('mujer', 'varón', 'niña', 'niño', 'hombre') cuando se refieran claramente al paciente, **incluso si hay un campo 'Sexo:' previo**. La prioridad es la exhaustividad.
+    *   **Identificadores textuales del paciente.** Ej: "se habló con **la menor**..." → `[**ID_SUJETO_ASISTENCIA: la menor**]`. **REGLA ACTUALIZADA:** En texto narrativo, **SÍ etiqueta 'paciente', 'Paciente', 'la paciente', 'el paciente' cuando sea la PRIMERA referencia al sujeto en un párrafo o sección clínica.** Para referencias posteriores en el mismo contexto, puedes ser más conservador.
+    *   **Nombres de hospitales, centros de salud e instituciones.** Ej: "derivado al **Hospital Reina Sofía**" → `[**HOSPITAL: Hospital Reina Sofía**]`.
+    *   **Nombres de personal sanitario** en narrativa o firmas. Ej: "informe realizado por **Dr. Saturnino Luján Marco**" → `[**NOMBRE_PERSONAL_SANITARIO: Saturnino Luján Marco**]`.
+    *   **Direcciones de correo electrónico y números de teléfono/fax** en cualquier parte del texto.
+    *   **Códigos postales** en contexto direccional, incluso sin prefijo. Ej: "CP 28002", "28002", "E-31008".
+
+**FASE 3: VERIFICACIÓN FINAL Y FORMATOS ESPECÍFICOS.**
+*   **Códigos postales:** Incluye cualquier secuencia de 4-5 dígitos que siga a 'CP:', 'C.P.', 'Código Postal' o aparezca en contexto direccional. Etiquétalos como `TERRITORIO`.
+*   **Fechas:** Incluye fechas en formato numérico (dd/mm/aaaa, etc.) incluso si están aisladas, cuando estén en un campo estructurado o sean el dato temporal principal de un evento clínico. Para años aislados en narrativa, aplica la regla original (solo si son parte de una fecha completa o el único dato temporal).
+
+**ETIQUETAS A DETECTAR:**
+*   **NOMBRE_SUJETO_ASISTENCIA:** Nombres y apellidos del paciente.
+*   **FECHAS:** Cualquier fecha, incluyendo formatos numéricos (dd/mm/aaaa, mm/dd/aaaa, etc.) y **textuales** (ej: "julio de 2007", "enero 2020"). **EN TEXTO NARRATIVO, EVITA ETIQUETAR AÑOS AISLADOS (ej: 1998, 2003) A MENOS QUE FORMEN PARTE DE UNA FECHA COMPLETA (ej: 'junio de 2007') O SEAN EL ÚNICO DATO TEMPORAL EN UN CONTEXTO DE FECHA (ej: 'en el año 2003'). Prioriza formatos de fecha completos.**
+*   **EDAD_SUJETO_ASISTENCIA:** Edades explícitas (ej: "45 años", "20 meses", "3 días"). **NO etiquetar edades que claramente se refieran a otra persona (ej: familiar mencionado) o a parámetros clínicos del feto (edad gestacional en semanas). La edad debe estar directamente asociada al sujeto principal del informe.** Para campos estructurados incompletos (ej: "70 a"), capturar solo si está seguido de "años"/"meses"/etc.
+*   **SEXO_SUJETO_ASISTENCIA:** Género. Incluye abreviaturas (H, M) y **palabras completas** como 'varón', 'mujer', 'hombre', 'femenino', 'masculino', 'niña', 'niño' que se refieran al paciente.
+*   **ID_SUJETO_ASISTENCIA:** Identificadores únicos del paciente (Historia Clínica, NHC, DNI, NIE, Pasaporte). Incluye referencias textuales como "la menor", "el recién nacido". **REGLA ACTUALIZADA:** En texto narrativo, SÍ etiqueta 'paciente', 'Paciente', 'la paciente', 'el paciente' cuando sea la PRIMERA referencia al sujeto en un párrafo o sección clínica.
+*   **FAMILIARES_SUJETO_ASISTENCIA:** Nombres de familiares del paciente y descripciones de relaciones familiares (ej: "padres", "hermanos").
+*   **OTROS_SUJETO_ASISTENCIA:** Otros datos personales del paciente no cubiertos por otras etiquetas.
+*   **NOMBRE_PERSONAL_SANITARIO:** Nombres y apellidos de médicos, enfermeras, etc.
+*   **ID_TITULACION_PERSONAL_SANITARIO:** Nº Colegiado, Nº Licencia, etc. Incluye el número que sigue a "NºCol:" u otras variantes.
+*   **ID_CONTACTO_ASISTENCIAL:** Identificadores de contacto asistencial (Nº de episodio, de visita, etc.).
+*   **ID_ASEGURAMIENTO:** Nº de tarjeta sanitaria, de asegurado, de póliza, **y NASS**.
+*   **HOSPITAL:** Nombres de hospitales.
+*   **CENTRO_SALUD:** Nombres de centros de salud, ambulatorios, consultorios.
+*   **INSTITUCION:** Nombres de otras instituciones (Universidades, Ministerios, Inspecciones).
+*   **CALLE:** Nombres de calles, avenidas, plazas, **y direcciones postales completas**. Una dirección postal completa incluye el nombre de la vía, número, piso, letra, y cualquier otro detalle local. **Una vez etiquetada una dirección en un campo estructurado (ej: 'Domicilio:'), NO volver a etiquetar sus componentes individuales (nombre de calle, número) si aparecen repetidos en el texto narrativo posterior.**
+*   **TERRITORIO:** Nombres de provincias, comunidades autónomas, regiones, **y códigos postales (CP) completos, incluso con prefijos alfabéticos** (ej: "28002", "E-31008", "CP 28002").
+*   **PAIS:** Nombres de países. **NO etiquetes gentilicios (ej: 'español', 'boliviano', 'mexicano') a menos que la palabra sea inequívocamente el nombre del país por sí solo (ej: '...de España').**
+*   **PROFESION:** Ocupaciones o profesiones.
+*   **NUMERO_TELEFONO:** Números de teléfono fijo o móvil.
+*   **NUMERO_FAX:** Números de fax.
+*   **CORREO_ELECTRONICO:** Direcciones de email.
+
+**EJEMPLOS DE LO QUE NO SE DEBE ETIQUETAR (FALSOS POSITIVOS COMUNES):**
+*   `"El paciente refiere..."` (si es una referencia genérica NO primera en un párrafo) → NO es `ID_SUJETO_ASISTENCIA`.
+*   `"Diagnosticado en 2003."` → NO es `FECHAS` (año aislado en narrativa).
+*   `"Edad gestacional: 24 semanas."` → NO es `EDAD_SUJETO_ASISTENCIA`.
+*   `"Vive con su mujer de 87 años."` → El "87 años" NO es `EDAD_SUJETO_ASISTENCIA` si se refiere al familiar.
+*   `"de origen boliviano"` → "boliviano" NO es `PAIS` (es un gentilicio).
+*   Dirección ya capturada en `Domicilio:` y repetida en narrativa → NO volver a etiquetar en narrativa.
+
+**PRINCIPIO FINAL: SÉ EXHAUSTIVO EN LA DETECCIÓN, PERO CONTEXTUAL EN LAS EXCLUSIONES.**
+Si tienes duda sobre si un fragmento de texto corresponde a una de las categorías anteriores, etiquétalo. Sin embargo, aplica las reglas de exclusión contextual descritas para reducir falsos positivos.
+
+**FORMATO DE SALIDA (EJEMPLO):**
+Texto de entrada: `Nombre: Pedro. Fecha de nacimiento: 10/10/1963. NASS: 74 57456745 66. Domicilio: Av. Corrientes 965, CABA. CP: 28002. Vive en Madrid. Es ingeniero.`
+Texto de salida: `Nombre: [**NOMBRE_SUJETO_ASISTENCIA: Pedro**]. Fecha de nacimiento: [**FECHAS: 10/10/1963**]. NASS: [**ID_ASEGURAMIENTO: 74 57456745 66**]. Domicilio: [**CALLE: Av. Corrientes 965, CABA**]. CP: [**TERRITORIO: 28002**]. Vive en [**TERRITORIO: Madrid**]. Es [**PROFESION: ingeniero**].`
+
+**RESUMEN FINAL:**
+Devuelve el texto de entrada completo, insertando `[**ETIQUETA: texto exacto**]` alrededor de cada entidad sensible que detectes, siguiendo el procedimiento de tres fases y aplicando las reglas de exclusión contextual. No añadas nada más.
+
+[review_1]
+Eres un corrector especializado en anonimización clínica. Tu tarea es revisar y **corregir** el texto anonimizado proporcionado, que es la salida del paso principal (`main`). Tu objetivo es **maximizar la precisión (F1)** corrigiendo dos tipos de errores principales:
+
+1.  **ELIMINAR FALSOS POSITIVOS (FP):** Elimina etiquetas que sean claramente incorrectas según las reglas del prompt principal. **FOCO CRÍTICO:**
+    *   Elimina la etiqueta `ID_SUJETO_ASISTENCIA` de las palabras **'paciente', 'Paciente', 'la paciente', 'el paciente'** cuando se usen como **referencias genéricas en medio de un párrafo narrativo** (no la primera referencia). Ej: "El [**ID_SUJETO_ASISTENCIA: paciente**] refiere dolor..." → Corregir a "El paciente refiere dolor...".
+    *   Elimina etiquetas `OTROS_SUJETO_ASISTENCIA` aplicadas incorrectamente a fármacos, diagnósticos o términos clínicos que no son datos personales identificativos (PII). Ej: "[**OTROS_SUJETO_ASISTENCIA: Amoxicilina**]" → Corregir a "Amoxicilina".
+    *   Elimina etiquetas duplicadas incorrectas para la misma entidad en el mismo contexto.
+
+2.  **AÑADIR FALSOS NEGATIVOS (FN) CRÍTICOS:** Añade etiquetas **SÓLO** para entidades que cumplan estas dos condiciones:
+    a) Sean claramente una de las categorías de etiquetas listadas en el prompt principal (ej: `HOSPITAL`, `CORREO_ELECTRONICO`, `NOMBRE_PERSONAL_SANITARIO`, `TERRITORIO` (código postal), `FAMILIARES_SUJETO_ASISTENCIA`).
+    b) Hayan sido **omitidas de forma evidente** en la salida del paso principal, especialmente en:
+        *   **Secciones de firma o contacto final** (nombres de hospital, direcciones, correos, teléfonos).
+        *   **Primera mención del paciente en narrativa** (ej: "Paciente mujer de..." donde "mujer" no esté etiquetada como `SEXO_SUJETO_ASISTENCIA`).
+        *   **Campos estructurados con formato irregular** que el paso principal pudo
+
+============================================================
